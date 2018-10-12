@@ -1,4 +1,4 @@
-from creds import coctoken, discordtoken, webhookid, webhooktoken
+from .cogs.utils.creds import discordtoken, webhookid, webhooktoken
 import discord
 from discord.ext import commands
 import logging
