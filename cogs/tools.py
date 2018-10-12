@@ -666,8 +666,6 @@ class ActionLogImplementation:
             print(await self.action_log_channel(message.guild.id))
             await (await self.action_log_channel(message.guild.id)).send(embed=e)
 
-
-
     @staticmethod
     async def on_raw_message_delete(payload):
         pass
