@@ -102,3 +102,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.cogs.utils.creds.py
