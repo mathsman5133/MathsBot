@@ -1,4 +1,4 @@
-from .cogs.utils.creds import discordtoken, webhookid, webhooktoken
+from cogs.utils.creds import discordtoken, webhookid, webhooktoken
 import discord
 from discord.ext import commands
 import logging
@@ -9,19 +9,22 @@ import sqlite3
 from collections import Counter, deque
 import contextlib
 import aiosqlite
-db_path = 'C:/py/maths-util-bot/database.db'
-conn = sqlite3.connect('C:/py/maths-util-bot/database.db')
+import os
+
+db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
+conn = sqlite3.connect(db_path)
 # conn is for routine db entries/fetch (ie get prefix)
 c = conn.cursor()
 webhook = discord.Webhook.partial(id=webhookid, token=webhooktoken, adapter=discord.RequestsWebhookAdapter())
 # webhook for logging command errors
 TOKEN = discordtoken
-initial_extensions = ['JokesCommands',
-                      'GamesCommands',
-                      'StatsCommands',
-                      'Hangman',
-                      'tools']
-#cogs to load
+initial_extensions = ['cogs.JokesCommands',
+                      'cogs.GamesCommands',
+                      'cogs.StatsCommands',
+                      'cogs.Hangman',
+                      'cogs.tools']
+
+# cogs to load
 
 
 @contextlib.contextmanager

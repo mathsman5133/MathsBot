@@ -3,7 +3,9 @@ from discord.ext import commands
 import datetime
 from collections import Counter, deque
 import aiosqlite
-db_path = 'C:/py/maths-util-bot/database.db'
+import os
+
+db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 
 class Stats:

@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import asyncio
-from help import HelpPaginator, CannotPaginate
+from cogs.utils.help import HelpPaginator
 from contextlib import redirect_stdout
 import io
 import textwrap
@@ -10,8 +10,11 @@ import webcolors
 import aiosqlite
 import enum
 import re
-db_path = 'C:/py/maths-util-bot/database.db'
+import os
 
+db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
+
+# db_path = 'C:/Users/User/py/mathsbot/cogs/utils/database.db'
 # action log in progress
 
 

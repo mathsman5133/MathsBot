@@ -3,8 +3,10 @@ import aiosqlite
 import random
 import discord
 import asyncio
-import GamesCommands
-db_path = 'C:/py/maths-util-bot/database.db'
+from cogs.GamesCommands import Leaderboard
+import os
+
+db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 
 class Jokes:
@@ -181,7 +183,7 @@ class Jokes:
             else:
                 return True
         # send the riddle
-        lb = GamesCommands.Leaderboard(ctx)
+        lb = Leaderboard(ctx)
         embed = discord.Embed(colour=0x00ffff)
         embed.set_author(name=riddle[0][0], icon_url=ctx.author.avatar_url)
         embed.set_footer(text="You have 60 seconds to type the correct answer. If you give up, type `idk`")

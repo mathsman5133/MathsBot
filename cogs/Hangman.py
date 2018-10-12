@@ -2,8 +2,10 @@ from discord.ext import commands
 import discord
 import re
 import random
-import GamesCommands
-db_path = 'C:/py/maths-util-bot/database.db '
+from cogs.GamesCommands import Leaderboard
+import os
+
+db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 # phrases i copied from somewhere. need to find more/new/dif ones too
 phrases = [
@@ -160,7 +162,7 @@ class Hangman:
                              icon_url=ctx.author.avatar_url)
             # run it through leaderboard class - checks if record, first time etc and responds accordingly,
             # adds attempts and fails etc too
-            lb = GamesCommands.Leaderboard(ctx)
+            lb = Leaderboard(ctx)
             intolb = await lb.into_leaderboard(game='hangman', record=game.attempts, attempts=game.attempts,
                                                wrong=game.fails, correct=1, guildid=ctx.guild.id)
             # if it returned something (first time or record)
@@ -177,7 +179,7 @@ class Hangman:
             # run it through leaderboard class - checks if record, first time etc and responds accordingly
             # adds attempts and fails etc too
 
-            lb = GamesCommands.Leaderboard(ctx)
+            lb = Leaderboard(ctx)
             intolb = await lb.into_leaderboard(game='hangman', record=game.attempts, attempts=game.attempts,
                                                wrong=game.fails, correct=1, guildid=ctx.guild.id)
             # if it returned something (first game or record)

@@ -4,10 +4,9 @@ import discord
 import aiosqlite
 import random
 import time
-import requests
-import json
+import os
 
-db_path = 'C:/py/maths-util-bot/database.db'
+db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 
 class Leaderboard:
