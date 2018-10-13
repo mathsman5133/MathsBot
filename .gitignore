@@ -102,6 +102,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-cogs\utils\creds.py
-cogs\utils\database.db
+
+**/creds.py
+**/database.db
 cogs\admin.py
