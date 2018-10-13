@@ -2,10 +2,6 @@ import discord
 from discord.ext import commands
 import asyncio
 from cogs.utils.help import HelpPaginator
-from contextlib import redirect_stdout
-import io
-import textwrap
-import traceback
 import webcolors
 import aiosqlite
 import enum
@@ -14,7 +10,6 @@ import os
 
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
-# db_path = 'C:/Users/User/py/mathsbot/cogs/utils/database.db'
 # action log in progress
 
 
@@ -697,10 +692,10 @@ class ActionLogImplementation:
         if 'on_mass_message_delete' in enabled:
             pass
 
-    async def on_raw_message_edit(self, payload):
-        enabled = await self.enabled(payload.guild_id)
-        if 'on_message_edit' in enabled:
-            pass
+    # async def on_raw_message_edit(self, payload):
+    #     enabled = await self.enabled(payload.guild_id)
+    #     if 'on_message_edit' in enabled:
+    #         pass
 
     # async def on_raw_reaction_add(self, payload):
     #     enabled = self.enabled(payload.guild_id)
@@ -1207,63 +1202,6 @@ class Tools:
         field1 = await self.bot.wait_for('message', check=check, timeout=60.0)
     # to finish
 
-    def cleanup_code(self, content):
-        """Automatically removes code blocks from the code."""
-        # remove ```py\n```
-        if content.startswith('```') and content.endswith('```'):
-            return '\n'.join(content.split('\n')[1:-1])
-
-        # remove `foo`
-        return content.strip('` \n')
-
-    @commands.command(pass_context=True, hidden=True, name='eval')
-    @commands.is_owner()
-    async def _eval(self, ctx, *, body: str):
-        """Evaluates a code"""
-
-        env = {
-            'bot': self.bot,
-            'ctx': ctx,
-            'channel': ctx.channel,
-            'author': ctx.author,
-            'guild': ctx.guild,
-            'message': ctx.message,
-            '_': self._last_result
-        }
-
-        env.update(globals())
-
-        body = self.cleanup_code(body)
-        stdout = io.StringIO()
-
-        to_compile = f'async def func():\n{textwrap.indent(body, "  ")}'
-
-        try:
-            exec(to_compile, env)
-        except Exception as e:
-            return await ctx.send(f'```py\n{e.__class__.__name__}: {e}\n```')
-
-        func = env['func']
-        try:
-            with redirect_stdout(stdout):
-                ret = await func()
-        except Exception as e:
-            value = stdout.getvalue()
-            await ctx.send(f'```py\n{value}{traceback.format_exc()}\n```')
-        else:
-            value = stdout.getvalue()
-            try:
-                await ctx.message.add_reaction('\u2705')
-            except:
-                pass
-
-            if ret is None:
-                if value:
-                    await ctx.send(f'```py\n{value}\n```')
-            else:
-                self._last_result = ret
-                await ctx.send(f'```py\n{value}{ret}\n```')
-
     @commands.group(name="prefix", invoke_without_command=True)
     async def prefix(self, ctx):
         """Manages a servers prefixes.
@@ -1351,6 +1289,7 @@ class Tools:
         except discord.Forbidden:
             pass
 
+
     # @commands.group(name="actionlog")
     # async def actionlog(self, ctx):
     #     print('ok')
@@ -1390,7 +1329,6 @@ class Tools:
     #                 RESULT: Clears prefixes. Only prefix left is <@496558571605983262>. Use this to add more"""
     #     await self.bot.set_guild_prefixes(ctx.message, [])
     #
-
 
 def setup(bot):
     bot.add_cog(Tools(bot))

@@ -104,3 +104,4 @@ venv.bak/
 .mypy_cache/
 cogs\utils\creds.py
 cogs\utils\database.db
+cogs\admin.py
