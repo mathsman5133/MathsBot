@@ -211,6 +211,16 @@ class MathsBot(commands.Bot):
                 except discord.Forbidden:
                     # I dont have permissions to send messages in this channel, continue to next one
                     pass
+        async with aiosqlite.connect(db_path) as db:
+            c = await db.execute("SELECT * FROM action_log_config WHERE guildid = :id",
+                                 {'id': guild.id})
+            dump = await c.fetchall()
+            if len(dump) == 0:
+                await db.execute("INSERT INTO action_log_config VALUES ('0000000000000000000000',"
+                                 " :id, '', '', '', '', '')",
+                                 {'id': guild.id})
+                await db.execute("INSERT INTO guildinfo VALUES (:id, '', 0)",
+                                 {'id': guild.id})
 
     async def on_guild_remove(self, guild):
         # when bot leaves a guild send msg to error log channel

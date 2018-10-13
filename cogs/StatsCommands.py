@@ -258,7 +258,8 @@ class Stats:
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def stats(self, ctx, *, member: discord.Member = None):
+    @commands.is_owner()
+    async def stat(self, ctx, *, member: discord.Member = None):
         """Tells you command usage stats for the server or a member.
             PARAMETERS: optional: [member] - a ping, name#discrim or userid
             EXAMPLE: `stats @mathsman` or `stats`
@@ -270,6 +271,47 @@ class Stats:
         else:
             await self.show_member_stats(ctx, member)
 
+    @commands.command()
+    async def about(self, ctx):
+        # get time bot up for as datetime object
+        delta_uptime = datetime.datetime.utcnow() - self.bot.uptime
+        # just get hours, minutes seconds by dividing by remainder of each
+        hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        days, hours = divmod(hours, 24)
+        async with aiosqlite.connect(db_path) as db:
+            c = await db.execute("SELECT command FROM commands")
+            dump = await c.fetchall()
+        appinfo = await self.bot.application_info()
+        dpn = appinfo.owner.display_name
+        dscrm = appinfo.owner.discriminator
+        channels = 0
+        for guild in self.bot.guilds:
+            for channel in guild.channels:
+                channels += 1
+
+        e = discord.Embed(colour=discord.Colour.orange())
+        e.set_author(name=f"{dpn}"
+                          f"#{dscrm}",
+                     icon_url=appinfo.owner.avatar_url)
+        e.description = 'A Multi-purpose utility bot with games, moderation and server management commands'
+        e.add_field(name="Guilds",
+                    value=f"{len(self.bot.guilds)}",
+                    inline=True)
+        e.add_field(name="Members",
+                    value=f"{len(self.bot.users)}",
+                    inline=True)
+        e.add_field(name="Channels",
+                    value=f"{channels}",
+                    inline=True)
+        e.add_field(name="Uptime",
+                    value=f"{days}d {hours}h {minutes}m {seconds}s")
+        e.add_field(name="Ping Time", value=f"{round(self.bot.latency*1000, 2)}ms")
+        e.add_field(name="Commands Used",
+                    value=f"{len(dump)}")
+        e.set_footer(text="In Python 3.6 using discord.py (1.0.0a)",
+                     icon_url='https://data.world/api/datadotworld-apps/dataset/python/file/raw/logo.png')
+        await ctx.send(embed=e)
 
 def setup(bot):
     if not hasattr(bot, 'command_stats'):

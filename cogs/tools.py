@@ -634,6 +634,22 @@ class ActionLogImplementation:
         al = await ActionLog.from_db(record, self.bot)
         return al.action_log_channel
 
+    async def get_channel(self, channelid):
+        return self.bot.get_channel(id=channelid)
+
+    async def get_message(self, messageid, channelid):
+        try:
+            o = discord.Object(id=messageid + 1)
+            # Use history rather than get_message due to
+            #         poor ratelimit (50/1s vs 1/1s)
+            msg = await self.get_channel(channelid).history(limit=1, before=o).next()
+            if msg.id != messageid:
+                return None
+            return msg
+
+        except Exception:
+            return None
+
     async def on_message(self, message):
         if message.author.bot:
             return
@@ -666,80 +682,113 @@ class ActionLogImplementation:
             print(await self.action_log_channel(message.guild.id))
             await (await self.action_log_channel(message.guild.id)).send(embed=e)
 
-    @staticmethod
-    async def on_raw_message_delete(payload):
+    async def on_raw_message_delete(self, payload):
+        enabled = await self.enabled(payload.guild_id)
+        if 'on_message_delete' in enabled:
+            message = self.get_message(payload.message_id, payload.channel_id)
+            channel = self.get_channel(payload.channel_id)
+            e = discord.Embed(colour=discord.Colour.orange())
+            e.set_author(name=f"Message by {message.author.display_name}#{message.author.discriminator}"
+                              f" deleted.",
+                         icon_url=message.author.avatar_url)
+
+    async def on_raw_bulk_message_delete(self, payload):
+        enabled = await self.enabled(payload.guild_id)
+        if 'on_mass_message_delete' in enabled:
+            pass
+
+    async def on_raw_message_edit(self, payload):
+        enabled = await self.enabled(payload.guild_id)
+        if 'on_message_edit' in enabled:
+            pass
+
+    # async def on_raw_reaction_add(self, payload):
+    #     enabled = self.enabled(payload.guild_id)
+    #
+    #
+    # async def on_raw_reaction_remove(self, payload):
+    #     enabled = self.enabled(payload.guild_id)
+    #
+    # async def on_raw_reaction_clear(self, payload):
+    #     enabled = self.enabled(payload.guild_id)
+
+    async def on_guild_channel_create(self, channel):
+        enabled = await self.enabled(channel.guild.id)
+        if 'on_channel_created' in enabled:
+            pass
+
+    async def on_guild_channel_update(self, channel):
+        enabled = await self.enabled(channel.guild.id)
+        if 'on_channel_edit' in enabled:
+            pass
+
+    async def on_guild_channel_delete(self, channel):
+        enabled = await self.enabled(channel.guild.id)
+        if 'on_channel_removed' in enabled:
+            pass
+
+    async def on_guild_channel_pins_update(self, channel, pin):
+        enabled = await self.enabled(channel.guild.id)
         pass
 
-    @staticmethod
-    async def on_raw_bulk_message_delete(payload):
+    async def on_webhooks_update(self, channel):
+        enabled = await self.enabled(channel.guild.id)
+        if 'on_webhook_edit' in enabled:
+            pass
+
+    async def on_member_join(self, member):
+        enabled = await self.enabled(member.guild.id)
+        if 'on_member_join' in enabled:
+            pass
+
+    async def on_member_leave(self, member):
+        enabled = await self.enabled(member.guild.id)
+        if 'on_member_leave' in enabled:
+            pass
+
+    # async def on_member_update(self, before, after):
+    #     enabled = await self.enabled(after.guild.id)
+    #     if 'on_nickname_change' in enabled:
+    #         pass
+
+    # async def on_guild_join(self, guild):
+    #     enabled = self.enabled(guild.id)
+
+    async def on_guild_update(self, before, after):
+        enabled = await self.enabled(after.guild.id)
+        if 'on_server_edit' in enabled:
+            pass
+
+    async def on_guild_role_create(self, role):
+        enabled = await self.enabled(role.guild.id)
+        if 'on_role_created' in enabled:
+            pass
+
+    async def on_guild_role_delete(self, role):
+        enabled = await self.enabled(role.guild.id)
+        if 'on_role_removed' in enabled:
+            pass
+
+    async def on_guild_role_update(self, before, after):
+        enabled = await self.enabled(after.guild.id)
+        if 'on_role_edit' in enabled:
+            pass
+
+    async def on_guild_emojis_update(self, guild, before, after):
+        enabled = await self.enabled(guild.id)
+
+    async def on_voice_state_update(self, member, before, after):
         pass
 
-    @staticmethod
-    async def on_raw_message_edit(payload):
-        pass
+    async def on_member_ban(self, guild, user):
+        enabled = await self.enabled(guild.id)
+        if 'on_member_banned' in enabled:
+            pass
 
-    @staticmethod
-    async def on_raw_reaction_add(payload):
-        pass
-
-    @staticmethod
-    async def on_raw_reaction_remove(payload):
-        pass
-
-    @staticmethod
-    async def on_raw_reaction_clear(payload):
-        pass
-    @staticmethod
-    async def on_guild_channel_create(channel):
-        pass
-    @staticmethod
-    async def on_guild_channel_delete(channel):
-        pass
-    @staticmethod
-    async def on_guild_channel_update(channel):
-        pass
-    @staticmethod
-    async def on_guild_channel_pins_update(channel, pin):
-        pass
-    @staticmethod
-    async def on_webhooks_update(channel):
-        pass
-    @staticmethod
-    async def on_member_join(member):
-        pass
-    @staticmethod
-    async def on_member_leave(member):
-        pass
-    @staticmethod
-    async def on_member_update(before, after):
-        pass
-    @staticmethod
-    async def on_guild_join(guild):
-        pass
-    @staticmethod
-    async def on_guild_update(before, after):
-        pass
-    @staticmethod
-    async def on_guild_role_create(role):
-        pass
-    @staticmethod
-    async def on_guild_role_delete(role):
-        pass
-    @staticmethod
-    async def on_guild_role_update(before, after):
-        pass
-    @staticmethod
-    async def on_guild_emojis_update(guild, before, after):
-        pass
-    @staticmethod
-    async def on_voice_state_update(member, before, after):
-        pass
-    @staticmethod
-    async def on_member_ban(guild, user):
-        pass
-    @staticmethod
-    async def on_member_unban(guild, user):
-        pass
+    async def on_member_unban(self, guild, user):
+        enabled = await self.enabled(guild.id)
+        if 'on_member_unbanned' in enabled:
+            pass
 
 
 
