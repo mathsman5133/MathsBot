@@ -105,4 +105,4 @@ venv.bak/
 
 **/creds.py
 **/database.db
-cogs\admin.py
+admin.py
