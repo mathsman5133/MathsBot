@@ -122,7 +122,10 @@ class Stats:
         e.set_author(name=f"{dpn}"
                           f"#{dscrm}",
                      icon_url=appinfo.owner.avatar_url)
-        e.description = 'A Multi-purpose utility bot with games, moderation and server management commands'
+        e.description = 'Latest News:\n' \
+                        '\N{BLACK SMALL SQUARE} `announce` - Send a message to all setup ' \
+                        'channels/categories in the server' \
+                        '\n\N{BLACK SMALL SQUARE} `kick` `ban` `unban` - more moderation features to come'
         e.add_field(name="Guilds",
                     value=f"{len(self.bot.guilds)}",
                     inline=True)
@@ -137,8 +140,16 @@ class Stats:
         e.add_field(name="Ping Time", value=f"{round(self.bot.latency*1000, 2)}ms")
         e.add_field(name="Commands Used",
                     value=f"{len(dump)}")
+        e.add_field(name="\u200b", value="[Bot invite (with mod features)]"
+                                         "(https://discordapp.com/oauth2/"
+                                         "authorize?client_id=496558571605983262&scope=bot&permissions=336063734)"
+                                         "\n[Bot invite (restricted)]"
+                                         "(https://discordapp.com/oauth2/authorize?"
+                                         "client_id=496558571605983262&scope=bot&permissions=511040)",
+                    inline=False)
         e.set_footer(text="In Python 3.6 using discord.py (1.0.0a)",
                      icon_url='https://data.world/api/datadotworld-apps/dataset/python/file/raw/logo.png')
+
         await ctx.send(embed=e)
 
 def setup(bot):

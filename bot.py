@@ -22,8 +22,10 @@ initial_extensions = ['cogs.JokesCommands',
                       'cogs.GamesCommands',
                       'cogs.StatsCommands',
                       'cogs.Hangman',
-                      'cogs.tools',
-                      'cogs.admin']
+                      'cogs.ActionLog',
+                      'cogs.Mod',
+                      'cogs.admin',
+                      'cogs.actionlogs']
 
 # cogs to load
 

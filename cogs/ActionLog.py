@@ -7,73 +7,13 @@ import aiosqlite
 import enum
 import re
 import os
+import datetime
+import io
+from .admin import TabularData
 
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 # action log in progress
-
-
-class _ActionLog(enum.Enum):
-    on = 1
-    off = 0
-
-    def __str__(self):
-
-        return self.name
-
-
-# check if valid id AND if your roles are higher than the person you're trying to affect -
-# to do anything to them you need a more elevated role
-
-
-class MemberId(commands.Converter):
-    async def convert(self, ctx, argument):
-        try:
-            # try to convert using normal discord.Member converter
-            m = await commands.MemberConverter().convert(ctx, argument)
-        except commands.BadArgument:
-            # otherwise try to just get id
-            try:
-                return int(argument, base=10)
-            # if that fails its not an id
-            except ValueError:
-                raise commands.BadArgument(f"{argument} is not a valid member or user id.")
-
-        else:
-            # if author it bot owner, guild owner or has roles higher than person they're affecting
-            can_execute = ctx.author.id == ctx.bot.owner_id or \
-                          ctx.author == ctx.guild.owner or \
-                          ctx.author.top_rol > m.top_role
-
-            if not can_execute:
-                raise commands.BadArgument("You cant do this your "
-                                           "top role is less than the person you're trying to affect")
-
-            return m.id
-
-# if its ban command and they're already kicked then we cant ping them or user member : discord.Member as they're
-# not in server anymore or it's cache
-
-
-class BannedMember(commands.Converter):
-    async def convert(self, ctx, argument):
-        ban_list = await ctx.guild.bans()
-        try:
-            member_id = int(argument, base=10)
-            member = discord.utils.find(lambda u: u.user == member_id, ban_list)
-        except ValueError:
-            raise commands.BadArgument(f'{argument} is not a valid user id')
-        return member
-
-
-# override default reason for kick/ban etc
-class ActionReason(commands.Converter):
-    async def convert(self, ctx, argument):
-        reason = f'{ctx.author} - ({ctx.author.id}), Reason: {argument}'
-        # make sure does not exceed 512 char limit
-        if len(reason) > 512:
-            raise commands.BadArgument("Reason is too long")
-        return reason
 
 
 class ChannelConverter(commands.Converter):
@@ -123,30 +63,41 @@ class ChannelConverter(commands.Converter):
         return result
 
 
-ActionModules = ['welcome_message',
-                 'leave_message',
-                 'on_member_join',
-                 'on_member_leave',
-                 'on_member_kicked',
-                 'on_member_banned',
-                 'on_member_unbanned',
-                 'on_message_edit',
-                 'on_message_delete',
-                 'on_mass_message_delete',
-                 'on_role_given',
-                 'on_role_created',
-                 'on_role_edit',
-                 'on_role_removed',
-                 'on_channel_created',
-                 'on_channel_edit',
-                 'on_channel_removed',
-                 'on_invite_posted',
-                 'on_invite_created',
-                 'on_nickname_change',
-                 'on_server_edit',
-                 'on_moderator_commands',
-                 'member_message_stalking'
-                 ]
+class _ActionLog(enum.Enum):
+    on = 1
+    off = 0
+
+    def __str__(self):
+
+        return self.name
+
+
+Modules = ['welcome_message',
+           'leave_message',
+           'on_member_join',
+           'on_member_leave',
+           'on_member_kicked',
+           'on_member_banned',
+           'on_member_unbanned',
+           'on_message_edit',
+         'on_message_delete',
+         'on_mass_message_delete',
+         'on_role_given',
+         'on_role_created',
+         'on_role_edit',
+         'on_role_removed',
+         'on_channel_created',
+         'on_channel_edit',
+         'on_channel_removed',
+         'on_invite_posted',
+         'on_invite_created',
+         'on_nickname_change',
+        'on_avatar_change',
+         'on_server_edit',
+         'on_moderator_commands',
+         ]
+
+
 class ActionLog:
     # work in progress
     __slots__ = ('action_log', 'guildid', 'bot', 'action_log_channel_id', 'welcome_message', 'leave_message', 'record')
@@ -172,7 +123,7 @@ class ActionLog:
 
     @property
     def lookup_enabled_action_log(self):
-        lookup = ActionModules
+        lookup = Modules
         enabled = []
         disabled = []
         for index, item in enumerate(self.action_log):
@@ -184,7 +135,7 @@ class ActionLog:
 
     @property
     def lookup_disabled_action_log(self):
-        lookup = ActionModules
+        lookup = Modules
         disabled = []
         for index, item in enumerate(self.action_log):
             if item == '0':
@@ -192,13 +143,48 @@ class ActionLog:
         return disabled
 
 
-class Prefix(commands.Converter):
-    async def convert(self, ctx, argument):
-        # disallows prefixes pinging bot as they are reserved
-        user_id = ctx.bot.user.id
-        if argument.startswith((f'<@{user_id}', f'<@!{user_id}>')):
-            raise commands.BadArgument('This is a reserved prefix already in use!')
-        return argument
+class WatchLog:
+    __slots__ = ('guild_id', 'userid', 'record', 'bot', 'toggled', 'watch_log_channel_id')
+
+    @classmethod
+    async def from_db(cls, record, bot):
+        record = record[0]
+        self = cls()
+        self.record = record
+        self.bot = bot
+        self.userid = record[0]
+        self.watch_log_channel_id = record[1]
+        self.guild_id = record[2]
+        self.toggled = record[3]
+        return self
+
+    @property
+    def watch_log_channel(self):
+        guild = self.bot.get_guild(int(self.guild_id))
+        channel = self.bot.get_channel(int(self.watch_log_channel_id))
+        return guild and channel
+
+    @property
+    def lookup_enabled_watch_log(self):
+        lookup = Modules
+        enabled = []
+        disabled = []
+        for index, item in enumerate(self.toggled):
+            if item == '0':
+                disabled.append(lookup[index])
+            else:
+                enabled.append(lookup[index])
+        return enabled
+
+    @property
+    def lookup_disabled_watch_log(self):
+        lookup = Modules
+        disabled = []
+        for index, item in enumerate(self.toggled):
+            if item == '0':
+                disabled.append(lookup[index])
+        return disabled
+
 
 class ActionLogConfig:
     def __init__(self, bot, msg, ctx, dump, config):
@@ -291,22 +277,21 @@ class ActionLogConfig:
 
     async def set_welcome_roles(self, msg):
         e = discord.Embed(colour=discord.Colour.blurple())
-        e.set_author(name="Please send which roles you would like me to give to everyone who joins the server.")
-        e.description = 'Eg. `@General @Announcements`'
+        e.set_author(name="Please send which roles (mention or name) "
+                          "you would like me to give to everyone who joins the server.")
+        e.description = 'Eg. `@General, Announcements`'
         await msg.edit(embed=e)
         while True:
             try:
                 message = await self.bot.wait_for('message', check=self.msgcheck, timeout=60)
                 roles = message.role_mentions
-                # argument = message.content
-                # match = re.compile(r'([0-9]{15,21})$').match(argument) or re.match(r'<@&([0-9]+)>$', argument)
-                # if match:
-                #     result = await msg.guild.get_role(int(match.group(1)))
-                # else:
-                #     result = await discord.utils.get(guild._roles.values(), name=argument)
-                #
-                # if result is None:
-                #     raise commands.BadArgument('Role "{}" not found.'.format(argument))
+                if len(roles) == 0:
+                    roles = []
+                    for argum in message.content:
+                        role = await discord.utils.get(message.guild._roles.values(), name=argum)
+                        roles.append(role)
+                if roles is None:
+                    raise commands.BadArgument(f"Role(s) {message.content} not found")
                 role_id = [n.id for n in roles]
                 r = '\n'
                 for role in role_id:
@@ -427,7 +412,7 @@ class ActionLogConfig:
                 return
 
     async def quit(self, indexs):
-        remaining = len(ActionModules) - indexs
+        remaining = len(Modules) - indexs
         print(remaining)
         for _ in range(1, remaining):
             self.modules_set += '0'
@@ -513,7 +498,7 @@ class ActionLogConfig:
                 return False
 
     async def next_module(self, indexs):
-        module = ActionModules[indexs]
+        module = Modules[indexs]
         toggle = self.config.action_log[indexs]
         e = discord.Embed()
         if toggle == '1':
@@ -528,7 +513,7 @@ class ActionLogConfig:
         edit = await self.msg.edit(embed=e)
 
     async def modules_config(self):
-        for indexs in (range(len(ActionModules))):
+        for indexs in (range(len(Modules))):
             await self.next_module(indexs)
             while True:
                 try:
@@ -536,7 +521,7 @@ class ActionLogConfig:
                     await self.msg.remove_reaction(reaction, self.ctx.author)
                     if str(reaction.emoji) == '\N{WHITE HEAVY CHECK MARK}':
                         self.modules_set += '1'
-                        self.enabled.append(ActionModules[indexs])
+                        self.enabled.append(Modules[indexs])
                         break
                     if str(reaction.emoji) == '\N{CROSS MARK}':
                         self.modules_set += '0'
@@ -553,9 +538,9 @@ class ActionLogConfig:
         return
 
     async def indiv_module_config(self, module_name):
-        if module_name not in ActionModules:
+        if module_name not in Modules:
             raise commands.BadArgument(f"Couldn't find module with name {module_name}.")
-        indexs = ActionModules.index(module_name)
+        indexs = Modules.index(module_name)
         print(str(self.prev_set))
         l = list(self.prev_set)
         new = ''
@@ -568,7 +553,7 @@ class ActionLogConfig:
                 if str(reaction.emoji) == '\N{WHITE HEAVY CHECK MARK}':
                     l[indexs] = 1
                     new = ''.join(str(e) for e in l)
-                    self.enabled.append(ActionModules[indexs])
+                    self.enabled.append(Modules[indexs])
                     if module_name == 'welcome_message':
                         await self.welcome_message()
                     if module_name == 'leave_message':
@@ -602,32 +587,23 @@ class ActionLogConfig:
             return True
 
 
-class ActionLogImplementation:
+class SendLogs:
     def __init__(self, bot):
         self.bot = bot
 
-    @staticmethod
-    async def record(guild_id):
-        async with aiosqlite.connect(db_path) as db:
-            c = await db.execute("SELECT * FROM action_log_config WHERE guildid = :id",
-                                 {'id': guild_id})
-            dump = await c.fetchall()
-        return dump
-
-    async def enabled(self, guild_id):
-        record = await self.record(guild_id)
-        al = await ActionLog.from_db(record, self.bot)
-        return al.lookup_enabled_action_log
-
-    async def disabled(self, guild_id):
-        record = await self.record(guild_id)
-        al = await ActionLog.from_db(record, self.bot)
-        return al.lookup_disabled_action_log
-
-    async def action_log_channel(self, guild_id):
-        record = await self.record(guild_id)
-        al = await ActionLog.from_db(record, self.bot)
-        return al.action_log_channel
+    async def send_log(self, e, channel, action, userid: int = None, reason: str = None):
+        if userid:
+            user = await self.get_user(userid)
+            e.set_author(name=f"{user.display_name}#{user.discriminator}",
+                         icon_url=user.avatar_url)
+        if reason:
+            print(reason)
+            e.add_field(name=action, value=reason)
+        else:
+            e.description = action
+        e.set_footer(text='\u200b')
+        e.timestamp = datetime.datetime.utcnow()
+        await channel.send(embed=e)
 
     async def get_channel(self, channelid):
         return self.bot.get_channel(id=channelid)
@@ -645,145 +621,402 @@ class ActionLogImplementation:
         except Exception:
             return None
 
-    async def on_message(self, message):
-        if message.author.bot:
-            return
-        enabled = await self.enabled(message.guild.id)
-        if 'member_message_stalking' in enabled:
-            e = discord.Embed(colour=message.author.colour)
-            e.set_author(name=f'Watching {message.author.display_name}#{message.author.discriminator}',
-                         icon_url=message.author.avatar_url)
-            e.description = f'<@{message.author.id}>' \
-                            f' sent a message in <#{message.channel.id}>'
-            e.add_field(name="Contents:", value=message.content or 'None', inline=False)
-            e.add_field(name="Users mentioned:",
-                        value='\n'.join([n.mention for n in message.mentions]) or 'None',
-                        inline=True)
-            e.add_field(name="Roles mentioned:",
-                        value='\n'.join([n.mention for n in message.mentions]) or 'None',
-                        inline=True)
-            e.add_field(name="Everyone mentioned:",
-                        value=message.mention_everyone,
-                        inline=True)
-            e.add_field(name="Attachment URLs:",
-                        value='\n'.join([n.url for n in message.attachments] )or 'None')
-            e.add_field(name='Embed Links:',
-                        value='\n'.join([n.url for n in message.embeds]) or 'None',
-                        inline=True)
-            e.add_field(name='Message URL:',
-                        value=message.jump_url,
-                        inline=False)
-            e.set_footer(text='Turn this off or edit settings with `actionlog config bigbrother`')
-            print(await self.action_log_channel(message.guild.id))
-            await (await self.action_log_channel(message.guild.id)).send(embed=e)
+    async def get_user(self, userid):
+        return self.bot.get_user(id=userid)
 
-    async def on_raw_message_delete(self, payload):
-        enabled = await self.enabled(payload.guild_id)
-        if 'on_message_delete' in enabled:
-            message = self.get_message(payload.message_id, payload.channel_id)
-            channel = self.get_channel(payload.channel_id)
-            e = discord.Embed(colour=discord.Colour.orange())
-            e.set_author(name=f"Message by {message.author.display_name}#{message.author.discriminator}"
-                              f" deleted.",
-                         icon_url=message.author.avatar_url)
+class ActionLogImplementation:
+    def __init__(self, bot):
+        self.bot = bot
 
-    async def on_raw_bulk_message_delete(self, payload):
+    @staticmethod
+    async def record(guild_id):
+        async with aiosqlite.connect(db_path) as db:
+            c = await db.execute("SELECT * FROM action_log_config WHERE guildid = :id",
+                                 {'id': guild_id})
+            dump = await c.fetchall()
+        return dump
+
+    @staticmethod
+    async def watchrecord(guild_id, userid):
+        async with aiosqlite.connect(db_path) as db:
+            c = await db.execute("SELECT * FROM watch_log_config WHERE guildid = :gid AND userid = :id",
+                                 {'gid': guild_id, 'id': userid})
+            return await c.fetchall()
+
+    async def enabled(self, guild_id):
+        record = await self.record(guild_id)
+        al = await ActionLog.from_db(record, self.bot)
+        return al.lookup_enabled_action_log
+
+    async def disabled(self, guild_id):
+        record = await self.record(guild_id)
+        al = await ActionLog.from_db(record, self.bot)
+        return al.lookup_disabled_action_log
+
+    async def action_log_channel(self, guild_id):
+        record = await self.record(guild_id)
+        al = await ActionLog.from_db(record, self.bot)
+        return al.action_log_channel
+
+    async def wlenabled(self, guild_id, userid):
+        record = await self.watchrecord(guild_id, userid)
+        wl = await WatchLog.from_db(record, self.bot)
+        return wl.lookup_enabled_watch_log
+
+    async def wldisabled(self, guild_id, userid):
+        record = await self.watchrecord(guild_id, userid)
+        wl = await WatchLog.from_db(record, self.bot)
+        return wl.lookup_disabled_watch_log
+
+    async def watchlogchannel(self, guild_id, user_id):
+        record = await self.watchrecord(guild_id, user_id)
+        wl = await WatchLog.from_db(record, self.bot)
+        return wl.watch_log_channel
+
+    def get_channel(self, channelid):
+        return self.bot.get_channel(channelid)
+
+    async def get_message(self, messageid, channel):
+        try:
+            o = discord.Object(id=messageid)
+            # Use history rather than get_message due to
+            #         poor ratelimit (50/1s vs 1/1s)
+
+            msg = await channel.get_message(id=messageid)
+            print(msg.id)
+            if msg.id != messageid:
+                return None
+            return msg
+
+        except Exception as e:
+            print(e)
+            return None
+
+    async def get_user(self, userid):
+        return self.bot.get_user(id=userid)
+
+    e = discord.Embed(colour=discord.Colour.red())
+    e.title = 'Level 1 - Moderator Commands'
+
+    async def on_raw_bulk_message_delete(self, payload=discord.RawBulkMessageDeleteEvent):
         enabled = await self.enabled(payload.guild_id)
         if 'on_mass_message_delete' in enabled:
-            pass
+            count = len(payload.message_ids)
+            channel_id = await self.action_log_channel(payload.guild_id)
+            await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                              action=f'Mass Message Delete: {count} messages',
+                                              )
+    async def on_member_join(self, member):
+        enabled = await self.enabled(member.guild.id)
+        wlenabled = await self.wlenabled(member.guild.id, member.id)
 
-    # async def on_raw_message_edit(self, payload):
-    #     enabled = await self.enabled(payload.guild_id)
-    #     if 'on_message_edit' in enabled:
-    #         pass
+        async def send(channel_id):
+            roles = '\n'.join(n.mention for n in member.roles)
+            self.e.set_thumbnail(url=member.avatar_url)
+            self.e.colour = member.colour
+            extra = ''
+            async for log in member.guild.audit_logs(action=discord.AuditLogAction.kick):
+                counter = 0
+                if log.target == self.bot.get_user(id=member.id):
+                    if counter == 0:
+                        extra += "Previously kicked by:\n "
+                        counter += 1
+                    extra += f'{log.user} for reason: {log.reason} ({log.created_at})\n'
+            async for log in member.guild.audit_logs(action=discord.AuditLogAction.ban):
+                counter = 0
+                if log.target == self.bot.get_user(id=member.id):
+                    if counter == 0:
+                        extra += "Previously banned by:\n "
+                        counter += 1
+                    extra += f'{log.user} for reason: {log.reason} ({log.created_at})\n'
+            async for log in member.guild.audit_logs(action=discord.AuditLogAction.unban):
+                counter = 0
+                if log.target == self.bot.get_user(id=member.id):
+                    if counter == 0:
+                        extra += "Previously unbanned by:\n "
+                        counter += 1
+                    extra += f'{log.user} for reason: {log.reason} ({log.created_at})\n'
 
-    # async def on_raw_reaction_add(self, payload):
-    #     enabled = self.enabled(payload.guild_id)
-    #
-    #
-    # async def on_raw_reaction_remove(self, payload):
-    #     enabled = self.enabled(payload.guild_id)
-    #
-    # async def on_raw_reaction_clear(self, payload):
-    #     enabled = self.enabled(payload.guild_id)
+            await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                              action=f"Member Joined - {member.display_name}#{member.discriminator}",
+                                              reason=f"Roles: {roles}\n"
+                                                     f"Bot: {member.bot}\n"
+                                                     f"Account created at: \n{member.created_at}"
+                                                     f"\n{extra}",
+                                              userid=member.id)
+
+        if 'on_member_join' in enabled:
+            channel_id = await self.action_log_channel(member.guild.id)
+            await send(channel_id)
+
+        if 'on_member_join' in wlenabled:
+            channel_id = await self.watchlogchannel(member.guild.id, member.id)
+            await send(channel_id)
+
+    async def on_member_leave(self, member):
+        enabled = await self.enabled(member.guild.id)
+        wlenabled = await self.wlenabled(member.guild.id, member.id)
+
+        async def send(channel_id, left: bool = None, kicks: bool = None, watch_kicks: bool = None):
+            extra = ''
+            async for log in member.guild.audit_logs(action=discord.AuditLogAction.kick):
+                counter = 0
+                if log.target == self.bot.get_user(id=member.id):
+                    if counter == 0:
+                        extra += "Previously kicked by:\n "
+                        counter += 1
+                    extra += f'{log.user} for reason: {log.reason} ({log.created_at})\n'
+            async for log in member.guild.audit_logs(action=discord.AuditLogAction.ban):
+                counter = 0
+                if log.target == self.bot.get_user(id=member.id):
+                    if counter == 0:
+                        extra += "Previously banned by:\n "
+                        counter += 1
+                    extra += f'{log.user} for reason: {log.reason} ({log.created_at})\n'
+            async for log in member.guild.audit_logs(action=discord.AuditLogAction.unban):
+                counter = 0
+                if log.target == self.bot.get_user(id=member.id):
+                    if counter == 0:
+                        extra += "Previously unbanned by:\n "
+                        counter += 1
+                    extra += f'{log.user} for reason: {log.reason} ({log.created_at})\n'
+            if kicks:
+                async for log in member.guild.audit_logs(action=discord.AuditLogAction.kick):
+                    if log.action == self.bot.get_user(id=member.id):
+                        self.e.set_thumbnail(url=member.avatar_url)
+                        await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                                          action=f"Member Kicked - {member.display_name}#{member.discriminator}",
+                                                          reason=f"Responsible Moderator: {log.user.mention}"
+                                                                 f"Reason: {log.reason}"
+                                                                 f"Bot: {member.bot}\n"
+                                                                 f"Account created at: \n{member.created_at}"
+                                                                 f"\n{extra}",
+                                                          userid=member.id)
+                        return
+            if left:
+                self.e.set_thumbnail(url=member.avatar_url)
+                await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                                  action=f"Member Left - {member.display_name}#{member.discriminator}",
+                                                  reason=f"Bot: {member.bot}\n"
+                                                         f"Account created at: \n{member.created_at}"
+                                                         f"\n{extra}",
+                                                  userid=member.id)
+                return
+            if watch_kicks:
+                async for log in member.guild.audit_logs(action=discord.AuditLogAction.kick,
+                                                         user=member):
+                    if log.action == self.bot.get_user(id=member.id):
+                        self.e.set_thumbnail(url=member.avatar_url)
+                        await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                                          action=f"Kicked Member "
+                                                                 f"{member.display_name}#{member.discriminator}",
+                                                          reason=f"Reason: {log.reason}",
+                                                          userid=member.id)
+                        return
+
+        if 'on_member_leave' in enabled:
+            channel_id = await self.action_log_channel(member.guild.id)
+            await send(channel_id, left=True)
+
+        if 'on_member_kicked' in enabled:
+            channel_id = await self.action_log_channel(member.guild.id)
+            await send(channel_id, kicks=True)
+
+        if 'on_moderator_commands' in enabled:
+            channel_id = await self.action_log_channel(member.guild.id)
+            await send(channel_id, watch_kicks=True)
+
+        if 'on_member_leave' in wlenabled:
+            channel_id = await self.watchlogchannel(member.guild.id, member.id)
+            await send(channel_id, left=True)
+
+        if 'on_member_kicked' in wlenabled:
+            channel_id = await self.watchlogchannel(member.guild.id, member.id)
+            await send(channel_id, kicks=True)
+
+        if 'on_moderator_commands' in wlenabled:
+            channel_id = await self.watchlogchannel(member.guild.id, member.id)
+            await send(channel_id, watch_kicks=True)
+
+    async def on_member_update(self, before, after):
+        # print(before.guild.name, before.guild.id)
+        enabled = await self.enabled(after.guild.id)
+        if 'on_nickname_change' in enabled:
+            if before.nick != after.nick:
+                channel_id = await self.action_log_channel(before.guild.id)
+                async for log in after.guild.audit_logs(limit=1):
+                    try:
+                        if log.user != after:
+                            await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                                              action=f"Update Nickname",
+                                                              reason=f"Before: "
+                                                                     f"{before.display_name}#{before.discriminator}\n"
+                                                                     f"After: "
+                                                                     f"{after.display_name}#{after.discriminator}\n"
+                                                                     f"Moderator: "
+                                                                     f"{log.user.display_name}#{log.user.discriminator}",
+                                                              )
+                        else:
+                            await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                                              action=f"Nickname Change: ",
+                                                              reason=f"Before: "
+                                                                     f"{before.display_name}#{before.discriminator}\n"
+                                                                     f"After: "
+                                                                     f"{after.display_name}#{after.discriminator}",
+                                                              userid=after.id)
+                    except AttributeError:
+                        pass
+
+        if 'on_avatar_change' in enabled:
+            if before.avatar_url != after.avatar_url:
+                channel_id = await self.action_log_channel(before.guild.id)
+                self.e.set_thumbnail(url=after.avatar_url)
+                self.e.set_footer(text="This was the previous avatar",
+                                  icon_url=before.avatar_url)
+                await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                                  action=f"Avatar Change: "
+                                                         f"{after.display_name}#{after.discriminator}",
+                                                  userid=after.id)
+        if ('on_role_given', 'on_role_removed', 'on_moderator_commands') in enabled:
+            if before.roles != after.roles:
+                channel_id = await self.action_log_channel(before.guild.id)
+                async for log in after.guild.audit_logs(limit=1):
+                    try:
+                        if log.user != after:
+                            async def mod_roles(give_remove, from_to):
+                                roles = '\n'.join(list(n.mention for n in log.roles))
+                                await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                                                  action=f"Moderator Change: {give_remove} "
+                                                                         f"Role {from_to} "
+                                                                         f"{after.display_name}#{after.discriminator}",
+                                                                  reason=f"Roles: {roles}"
+                                                                         f"Moderator: "
+                                                                         f"{log.user.display_name}#"
+                                                                         f"{log.user.discriminator}"
+                                                                  )
+                            if log.roles in after.roles:
+                                if ('on_role_given', 'on_moderator_commands') in enabled:
+                                    await mod_roles('Give', 'To')
+                            else:
+                                if ('on_role_removed', 'on_moderator_commands') in enabled:
+                                    await mod_roles('Removed', 'From')
+
+                        else:
+                            async def self_roles(give_remove, to_from):
+                                roles = '\n'.join(list(n.mention for n in log.roles))
+                                await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                                                  action=f"Role {give_remove} {to_from} Self",
+                                                                  reason=f"Roles: {roles}",
+                                                                  userid=after.id
+                                                                  )
+                            if log.roles in after.roles:
+                                if 'on_role_given' in enabled:
+                                    await self_roles('Given', 'To')
+                            else:
+                                if 'on_role_removed' in enabled:
+                                    await self_roles('Removed', 'From')
+                    except AttributeError:
+                        pass
 
     async def on_guild_channel_create(self, channel):
         enabled = await self.enabled(channel.guild.id)
-        if 'on_channel_created' in enabled:
-            pass
+        async for log in channel.guild.audit_logs(limit=1, action=discord.AuditLogAction.channel_create):
+            user = log.user
+        wlenabled = await self.wlenabled(channel.guild.id, user.id)
+        self.e.clear_fields()
 
-    async def on_guild_channel_update(self, channel):
-        enabled = await self.enabled(channel.guild.id)
+        async def send_logs(channel_id):
+            roles = '\n'.join(list(n.mention for n in channel.changed_roles))
+            await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                              action=f"Channel created - {channel.name}",
+                                              reason=f"Category: {channel.category}\n"
+                                                     f"Members: {len(channel.members)}\n"
+                                                     f"Changed roles: \n{roles}",
+                                              userid=user.id)
+        if 'on_channel_created' in enabled:
+            channel_id = await self.action_log_channel(channel.guild.id)
+            await send_logs(channel_id)
+
+        self.e.clear_fields()
+        if 'on_channel_created' in wlenabled:
+            channel_id = await self.watchlogchannel(channel.guild.id, user.id)
+            await send_logs(channel_id)
+
+    async def on_guild_channel_update(self, before, after):
+        async for log in after.guild.audit_logs(limit=1):
+            user = log.user
+            print(log.user, log.action)
+        async for log in after.guild.audit_logs(limit=1, action=discord.AuditLogAction.overwrite_update):
+            user = log.user
+            print(log.user)
+
+        enabled = await self.enabled(before.guild.id)
+        wlenabled = await self.wlenabled(after.guild.id, user.id)
+        self.e.clear_fields()
         if 'on_channel_edit' in enabled:
-            pass
+            changes = ''
+            if before.name != after.name:
+                changes += f'Old Name: {before.name}\n' \
+                           f'New Name: {after.name}\n'
+            if before.topic != after.topic:
+                changes += f'Old Topic: {before.topic}\n' \
+                           f'New Topic: {after.topic}\n'
+            if before.is_nsfw() != after.is_nsfw():
+                changes += f"NSFW Before: {before.is_nsfw()}\n" \
+                           f"NSFW After: {after.is_nsfw()}\n"
+            if before.overwrites != after.overwrites:
+                for perms in after.overwrites:
+                    if perms not in before.overwrites:
+                        print(perms[1].pair())
+                        # perm = '\n'.join(perms[1])
+                        changes += f"Changed permission for {perms[0].mention}:\n"
+
+            async def send_logs(channel_id):
+                await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                                  action=f"Channel Modified - {before.name}",
+                                                  reason=f"Category: {before.category}\n"
+                                                         f"Members: {len(before.members)}\n"
+                                                         f"{changes}",
+                                                  userid=user.id)
+
+            if 'on_channel_edit' in enabled:
+                channel_id = await self.action_log_channel(after.guild.id)
+                await send_logs(channel_id)
+
+            self.e.clear_fields()
+            if 'on_channel_edit' in wlenabled:
+                channel_id = await self.watchlogchannel(after.guild.id, user.id)
+                await send_logs(channel_id)
 
     async def on_guild_channel_delete(self, channel):
         enabled = await self.enabled(channel.guild.id)
         if 'on_channel_removed' in enabled:
-            pass
+            async for log in channel.guild.audit_logs(limit=1, action=discord.AuditLogAction.channel_delete):
+                user = log.user
+            enabled = await self.enabled(channel.guild.id)
+            wlenabled = await self.wlenabled(channel.guild.id, user.id)
+            self.e.clear_fields()
+            async def send_logs(channel_id):
+                await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+                                                  action=f"Moderator Command: Channel Deleted - {channel.name}",
+                                                  reason=f"Category: {channel.category}\n"
+                                                         f"Members: {len(channel.members)}\n"
+                                                         f"Moderator: {user.display_name}#{user.discriminator}",
+                                                  userid=user.id)
 
-    async def on_guild_channel_pins_update(self, channel, pin):
-        enabled = await self.enabled(channel.guild.id)
-        pass
+            if 'on_channel_removed' in enabled:
+                channel_id = await self.action_log_channel(channel.guild.id)
+                await send_logs(channel_id)
 
-    async def on_webhooks_update(self, channel):
-        enabled = await self.enabled(channel.guild.id)
-        if 'on_webhook_edit' in enabled:
-            pass
-
-    async def on_member_join(self, member):
-        enabled = await self.enabled(member.guild.id)
-        if 'on_member_join' in enabled:
-            pass
-
-    async def on_member_leave(self, member):
-        enabled = await self.enabled(member.guild.id)
-        if 'on_member_leave' in enabled:
-            pass
-
-    # async def on_member_update(self, before, after):
-    #     enabled = await self.enabled(after.guild.id)
-    #     if 'on_nickname_change' in enabled:
-    #         pass
+            self.e.clear_fields()
+            if 'on_channel_removed' in wlenabled:
+                channel_id = await self.watchlogchannel(channel.guild.id, user.id)
+                await send_logs(channel_id)
 
     # async def on_guild_join(self, guild):
     #     enabled = self.enabled(guild.id)
 
-    async def on_guild_update(self, before, after):
-        enabled = await self.enabled(after.guild.id)
-        if 'on_server_edit' in enabled:
-            pass
 
-    async def on_guild_role_create(self, role):
-        enabled = await self.enabled(role.guild.id)
-        if 'on_role_created' in enabled:
-            pass
-
-    async def on_guild_role_delete(self, role):
-        enabled = await self.enabled(role.guild.id)
-        if 'on_role_removed' in enabled:
-            pass
-
-    async def on_guild_role_update(self, before, after):
-        enabled = await self.enabled(after.guild.id)
-        if 'on_role_edit' in enabled:
-            pass
-
-    async def on_guild_emojis_update(self, guild, before, after):
-        enabled = await self.enabled(guild.id)
-
-    async def on_voice_state_update(self, member, before, after):
-        pass
-
-    async def on_member_ban(self, guild, user):
-        enabled = await self.enabled(guild.id)
-        if 'on_member_banned' in enabled:
-            pass
-
-    async def on_member_unban(self, guild, user):
-        enabled = await self.enabled(guild.id)
-        if 'on_member_unbanned' in enabled:
-            pass
 
 
 
@@ -809,15 +1042,15 @@ class Tools:
         config = await ActionLog.from_db(dump, self.bot)
         strenabled = ''
         strdisabled = ''
-        for enabled in config.lookup_action_log[0]:
+        for enabled in config.lookup_enabled_action_log:
             strenabled += f'{enabled}\n'
-        for disabled in config.lookup_action_log[1]:
+        for disabled in config.lookup_disabled_action_log:
             strdisabled += f'{disabled}\n'
         e = discord.Embed(colour=discord.Colour.blue())
         e.set_author(name="ActionLog modules", icon_url=ctx.author.avatar_url)
-        e.add_field(name="Enabled modules:", value=strenabled, inline=False)
-        e.add_field(name="Disabled modules:", value=strdisabled, inline=False)
-        e.add_field(name="Action Log Channel:", value=f'<#{ActionLog.action_log_channel.id}>)', inline=False)
+        e.add_field(name="Enabled modules:", value=strenabled or '\u200b', inline=False)
+        e.add_field(name="Disabled modules:", value=strdisabled or '\u200b', inline=False)
+        e.add_field(name="Action Log Channel:", value=f'<#{config.action_log_channel.id}>' or '\u200b', inline=False)
         await ctx.send(embed=e)
 
     @_actionlog.command()
@@ -871,7 +1104,7 @@ class Tools:
                 await msg.remove_reaction(reaction, ctx.author)
                 if str(reaction.emoji) == '\N{WHITE HEAVY CHECK MARK}':
                     await alc.modules_config()
-                    return await alc.quit(len(ActionModules))
+                    return await alc.quit(len(Modules))
                 if str(reaction.emoji) == '\N{CROSS MARK}':
                     await msg.delete()
                 if str(reaction.emoji) == '\N{WHITE QUESTION MARK ORNAMENT}':
@@ -879,7 +1112,7 @@ class Tools:
                     if shelp is True:
                         await alc.modules_config()
                         await alc.modules_config()
-                        return await alc.quit(len(ActionModules))
+                        return await alc.quit(len(Modules))
                     else:
                         return await alc.quit(0)
             except asyncio.TimeoutError:
@@ -944,6 +1177,95 @@ class Tools:
         e.description = "Action Log disabled. Saved modules and welcome messages have been saved and ready next time " \
                         "you enable actionlog"
         await ctx.send(embed=e)
+
+    def levelinfo(self, level):
+        if level == '1':
+            return f'Moderator Commands (kick, (un)ban, channel/role ' \
+                 f'add/remove/update, server changes, any MathsBot moderation commands) Only'
+        if level == '2':
+            return f'Moderator Commands, and any manage_message commands (delete/pin/unpin msg, remove reactions)'
+        if level == '3':
+            return f'Moderator Commands, manage_message commands, and personal message edits and deletes'
+        if level == '4':
+            return 'Moderator Commands, manage_message commands, ' \
+                   'personal edit/deletes and all messages and reaction adds'
+
+    @commands.group(name='watch', invoke_without_command=True)
+    async def _watch(self, ctx):
+        e = discord.Embed(colour=discord.Colour.green())
+        async with aiosqlite.connect(db_path) as db:
+            c = await db.execute("SELECT * FROM watch_log_config WHERE guildid = :gid",
+                                 {'gid': ctx.guild.id})
+            dump = await c.fetchall()
+        users = []
+        channels = []
+        level = []
+        for indiv in dump:
+            users.append(indiv[0])
+            channels.append(indiv[1])
+            level.append(indiv[3])
+        if len(dump) != 0:
+            e.add_field(name="User",
+                        value='\n'.join(f'Level {self.levelinfo(level)}: <@{users}>' for (level, users) in enumerate(dump)))
+            e.add_field(name="Channel",
+                        value='\n'.join(f'<#{channels[_]}>' for _ in range(0, len(channels))),
+                        inline=True)
+        e.set_author(name=f"Currently Watching {len(users)} users")
+
+        e.add_field(name="Levels Info",
+                    value='\u200b')
+        e.add_field(name="Level 1", value=self.levelinfo('1'), inline=False)
+        e.add_field(name="Level 2", value=self.levelinfo('2'), inline=False)
+        e.add_field(name="Level 3", value=self.levelinfo('3'), inline=False)
+        e.add_field(name="Level 4", value=self.levelinfo('4'), inline=False)
+        await ctx.send(embed=e)
+
+    @_watch.command(name="add")
+    async def _add(self, ctx, user: discord.Member, channel: discord.TextChannel, level: str):
+        async with aiosqlite.connect(db_path) as db:
+            c = await db.execute("SELECT * FROM watch_log_config WHERE guildid = :gid AND userid = :id",
+                                 {'id': user.id, 'gid': ctx.guild.id})
+            dump = await c.fetchall()
+        if len(dump) != 0:
+            async with aiosqlite.connect(db_path) as db:
+                await db.execute("UPDATE watch_log_config SET channel = :channel, level = :level WHERE "
+                                 "guildid = :gid AND userid = :id",
+                                 {'channel': channel.id, 'level': level,
+                                  'gid': ctx.guild.id, 'id': user.id})
+                await db.commit()
+            e = discord.Embed(colour=discord.Colour.blue())
+            e.description = f"{user.display_name}#{user.discriminator} is already being watched. "\
+                            f"\n\nI have updated their settings so they report in {channel.mention} "\
+                            f"with level {level}."
+            return await ctx.send(embed=e)
+        async with aiosqlite.connect(db_path) as db:
+            await db.execute("INSERT INTO watch_log_config VALUES (:id, :cid, :gid, :level)",
+                             {'id': user.id, 'cid': channel.id, 'gid': ctx.guild.id,
+                              'level': level})
+            await db.commit()
+        e = discord.Embed(colour=discord.Colour.green())
+        e.description = f"Added {user.display_name}#{user.discriminator} to {ctx.guild.name}'s" \
+                        f" watch list, reporting in {channel.mention} with level {level}."
+        e.add_field(name=f"Level {level} Info: ",
+                    value=self.levelinfo(level))
+        await ctx.send(embed=e)
+
+    @_watch.command(name="delete")
+    async def _delete(self, ctx, user: discord.Member):
+        async with aiosqlite.connect(db_path) as db:
+            c = await db.execute("SELECT * FROM watch_log_config WHERE guildid = :gid AND userid = :id",
+                                 {'id': user.id, 'gid': ctx.guild.id})
+            dump = await c.fetchall()
+        if len(dump) == 0:
+            e = discord.Embed(colour=discord.Colour.blue())
+            e.description = f"{user.display_name}#{user.discriminator} has not been added to the watch list.\n\n"\
+                            f"To add them, use `watch add [user] [#channel] [level]`."
+            return await ctx.send(embed=e)
+        async with aiosqlite.connect(db_path) as db:
+            await db.execute("DELETE FROM watch_log_config WHERE userid = :id AND guildid = :id",
+                             {'id': user.id, 'guildid': ctx.guild.id})
+            await db.commit()
+        await ctx.send('\N{THUMBS UP SIGN}')
 
     # when you call function that returns one of these errors send it as follows
     async def __error(self, ctx, error):
@@ -1202,133 +1524,6 @@ class Tools:
         field1 = await self.bot.wait_for('message', check=check, timeout=60.0)
     # to finish
 
-    @commands.group(name="prefix", invoke_without_command=True)
-    async def prefix(self, ctx):
-        """Manages a servers prefixes.
-
-        Invoke this without a command and get the server prefix
-        
-        Remember <@496558571605983262> is always a prefix.
-        """
-        prefixes = self.bot.get_prefixes(ctx.message)
-        await ctx.send(f'The prefix for {ctx.guild.name} is {prefixes[2] or None}. '
-                       f'Remember you can mention me as a prefix!')
-
-    @prefix.command(ignore_extra=False)
-    async def change(self, ctx, prefix: Prefix):
-        """Adds a prefix for server.
-                    PARAMETERS: [Prefix name]
-                    EXAMPLE: `prefix add !@`
-                    RESULT: Adds prefix !@"""
-        # get list of current prefixes
-        current_prefix = self.bot.get_prefixes(ctx.message)
-        # if prefix changing to is already in the list of prefixes
-        if prefix in current_prefix:
-            return await ctx.send("Prefix already registered!")
-        try:
-            # update prefix
-            await self.bot.set_guild_prefixes(ctx.message, prefix)
-        except Exception as e:
-            await ctx.send(f"{e}\N{THUMBS DOWN SIGN}")
-        else:
-            await ctx.send(f"\N{OK HAND SIGN} Prefix now set to: `{prefix}`. Remember you can always get my "
-                           f"attention with <@{self.bot.user.id}>` help`!")
-
-    @commands.command()
-    async def kick(self, ctx, user: discord.Member, *, reason: ActionReason):
-        # set reason if none supplied
-        if reason is None:
-            reason = f'Removed by {ctx.author} ({ctx.author.id})'
-        # kick
-        await user.kick(reason=reason)
-        # reason response message
-        s = await ctx.send(reason)
-
-        await asyncio.sleep(5)
-        # delete response after 5 seconds
-        await s.delete()
-        try:
-            # try to delete the command
-            await ctx.delete()
-        except:
-            pass
-
-    @commands.command()
-    async def ban(self, ctx, user: MemberId, *, reason: ActionReason):
-        # set reason if none supplied
-        if reason is None:
-            reason = f'Banned by {ctx.author} ({ctx.author.id})'
-        # ban
-        await ctx.guild.ban(id=discord.Object(id=user), reason=reason)
-        s = await ctx.send(reason)
-        await asyncio.sleep(5)
-        # delete reason response after 5
-        await s.delete()
-        try:
-            await ctx.delete()
-        except:
-            pass
-
-    @commands.command()
-    async def unban(self, ctx, user: BannedMember, *, reason: ActionReason):
-        # set reason
-        if not reason:
-            reason = f'Unbanned by {ctx.author} ({ctx.author.id})'
-        # unban
-        await ctx.guild.unban(user.user, reason)
-        # send response reason (why was banned)
-        if user.reason:
-            s = await ctx.send(f"Unbanned {user.user} ({user.user.id}) - banned for {user.reason}")
-        else:
-            s = await ctx.send(f"Unbanned {user.user} ({user.user.id})")
-        await asyncio.sleep(5)
-        # delete response reason
-        await s.delete()
-        try:
-            await ctx.delete()
-        except discord.Forbidden:
-            pass
-
-
-    # @commands.group(name="actionlog")
-    # async def actionlog(self, ctx):
-    #     print('ok')
-    # @actionlog.command()
-    # async def config(self, ctx):
-    #     print('ok')
-
-    # @add.error
-    # async def prefix_add_error(self, ctx, error):
-    #     if isinstance(error, commands.TooManyArguments):
-    #         await ctx.send("You've given too many prefixes. Either quote it or only do it one by one.")
-    #
-    # @prefix.command(name="remove", ignore_extra=False)
-    # async def prefix_remove(self, ctx, prefix: Prefix):
-    #     """Removes a prefixes from a server.
-    #                 PARAMETERS: [prefix name]
-    #                 EXAMPLE: `prefix remove !@`
-    #                 RESULT: Removes prefixes !@"""
-    #     current_prefix = self.bot.get_prefixes(ctx.message)
-    #
-    #     try:
-    #         current_prefix.remove(prefix)
-    #     except ValueError:
-    #         return await ctx.send("This prefix has not been registered!")
-    #     try:
-    #         await self.bot.set_guild_prefixes(ctx.message, current_prefix)
-    #     except Exception as e:
-    #         await ctx.send(f"{e}\N{THUMBS DOWN SIGN}")
-    #     else:
-    #         await ctx.send("\N{OK HAND SIGN}")
-    #
-    # @prefix.command(name="clear")
-    # async def clear_prefix(self, ctx):
-    #     """Clears prefixes for a server.
-    #                 PARAMETERS: None
-    #                 EXAMPLE: `prefix clear`
-    #                 RESULT: Clears prefixes. Only prefix left is <@496558571605983262>. Use this to add more"""
-    #     await self.bot.set_guild_prefixes(ctx.message, [])
-    #
 
 def setup(bot):
     bot.add_cog(Tools(bot))

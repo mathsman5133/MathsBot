@@ -36,7 +36,24 @@ phrases = [
     'All Greek To Me', 'Two Down, One to Go', 'What Am I, Chopped Liver?', "It's Not Brain Surgery",
     'Like Father Like Son', 'Easy As Pie', 'Elephant in the Room', 'Quick On the Draw', 'Barking Up The Wrong Tree',
     'A Chip on Your Shoulder', 'Put a Sock In It', 'Quality Time', 'Yada Yada', 'Head Over Heels', 'My Cup of Tea',
-    'Ugly Duckling', 'Drive Me Nuts', 'When the Rubber Hits the Road'
+    'Ugly Duckling', 'Drive Me Nuts', 'When the Rubber Hits the Road', 'A penny for your thoughts',
+    'A picture is worth a thousand words', 'A plague on both your houses', 'A red rag to a bull',
+    'A rolling stone gathers no moss', 'A sight for sore eyes', "Beggars can't be choosers", 'Behind the eight ball',
+    'Bells and whistles', 'Bet your bottom dollar', 'Better late than never', 'Bang for your buck',
+    'Big fish in a small pond', 'Blow your own trumpet', 'Blown to smithereens', "Bob's your uncle",
+    'Too big for your boots', 'Break the ice', 'Break a leg', "If it ain't broke, don't fix it",
+    'Burn the candle at both ends', 'Burning the midnight oil', 'Cat got your tongue?', 'Chalk and cheese',
+    'Cheap at half the price', 'Children should be seen and not heard', 'Climb on the bandwagon',
+    'Cool as a cucumber', 'Cost an arm and a leg', 'Counting sheep', "Dog's breakfast", "Double whammy",
+    'Dropping like flies', 'Eeny, meeny, miny, mo', 'Even at the turning of the tide', 'Everybody out',
+    'Faff about', 'Face the music', 'Fair dinkum', 'Famous last words', 'Fight fire with fire',
+    'Filthy rich', 'Finger lickin good', "As fit as a butcher's dog", 'For whom the bell tolls', 'Forbidden fruit',
+    'Higgledy-piggledy', 'Hit the ground running', 'Hit the nail on the head', 'Hit the hay', 'Hunky-dory',
+    'I will wear my heart upon my sleeve', 'In a nutshell', "In the bad books", 'Jump the gun',
+    'Jump on the bandwagon', 'Keep your chin up', 'Keep your distance', 'Let sleeping dogs lie',
+    'Let the cat out of the bag', 'Let them eat cake', 'Let there be light', 'Let your hair down',
+    'Okey-dokey', 'Old as Methuselah', 'Old as the hills', 'The jury is still out', 'Zig-zag'
+
 ]
 
 
