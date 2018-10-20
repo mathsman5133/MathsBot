@@ -24,8 +24,8 @@ initial_extensions = ['cogs.JokesCommands',
                       'cogs.Hangman',
                       'cogs.ActionLog',
                       'cogs.Mod',
-                      'cogs.admin',
-                      'cogs.actionlogs']
+                      'cogs.admin'
+                      ]
 
 # cogs to load
 
@@ -62,7 +62,7 @@ def run_bot():
     # run bot
 
 
-def find_prefix(bot, msg):
+async def find_prefix(bot, msg):
     # callable prefix
     bot_id = bot.user.id
     # bot user id
@@ -72,9 +72,10 @@ def find_prefix(bot, msg):
         prefixes.append('!')
         # prefix is ! in dms
     else:
-        c.execute("SELECT prefix FROM guildinfo WHERE guildid = :id",
-                  {'id': msg.guild.id})
-        dump = c.fetchall()
+        async with aiosqlite.connect(db_path) as db:
+            c = await db.execute("SELECT prefix FROM guildinfo WHERE guildid = :id",
+                                 {'id': msg.guild.id})
+            dump = await c.fetchall()
         # get prefix from db for guildid
         if len(dump) == 0:
             # if no prefix in db/set prefixes are ! ?
@@ -152,9 +153,9 @@ class MathsBot(commands.Bot):
         # send to log channel with webhook attribute assigned to bot earlier
         self.webhook.send(embed=e)
 
-    def get_prefixes(self, msg):
+    async def get_prefixes(self, msg):
         # gonna use later to find prefix of guild/msg etc.
-        return find_prefix(self, msg)
+        return await find_prefix(self, msg)
 
     async def set_guild_prefixes(self, msg, prefix):
         # update a prefix for a guild
@@ -214,6 +215,7 @@ class MathsBot(commands.Bot):
                 except discord.Forbidden:
                     # I dont have permissions to send messages in this channel, continue to next one
                     pass
+
         async with aiosqlite.connect(db_path) as db:
             c = await db.execute("SELECT * FROM action_log_config WHERE guildid = :id",
                                  {'id': guild.id})
@@ -222,8 +224,9 @@ class MathsBot(commands.Bot):
                 await db.execute("INSERT INTO action_log_config VALUES ('0000000000000000000000',"
                                  " :id, '', '', '', '', '')",
                                  {'id': guild.id})
-                await db.execute("INSERT INTO guildinfo VALUES (:id, '', 0)",
+                await db.execute("INSERT INTO guildinfo VALUES (:id, '!', 0)",
                                  {'id': guild.id})
+            await db.commit()
 
     async def on_guild_remove(self, guild):
         # when bot leaves a guild send msg to error log channel

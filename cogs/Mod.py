@@ -80,7 +80,7 @@ class Mod:
 
         Remember <@496558571605983262> is always a prefix.
         """
-        prefixes = self.bot.get_prefixes(ctx.message)
+        prefixes = await self.bot.get_prefixes(ctx.message)
         await ctx.send(f'The prefix for {ctx.guild.name} is {prefixes[2] or None}. '
                        f'Remember you can mention me as a prefix!')
 
@@ -91,7 +91,7 @@ class Mod:
                     EXAMPLE: `prefix add !@`
                     RESULT: Adds prefix !@"""
         # get list of current prefixes
-        current_prefix = self.bot.get_prefixes(ctx.message)
+        current_prefix = await self.bot.get_prefixes(ctx.message)
         # if prefix changing to is already in the list of prefixes
         if prefix in current_prefix:
             return await ctx.send("Prefix already registered!")
