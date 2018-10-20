@@ -88,7 +88,8 @@ async def find_prefix(bot, msg):
 
 class MathsBot(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix=find_prefix, case_insensitive=True)
+        super().__init__(command_prefix=find_prefix, case_insensitive=True,
+                         fetch_offline_members=False)
         # setup bot
         self.remove_command(name='help')
         # we have our own help formatter
