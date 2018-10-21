@@ -838,85 +838,85 @@ class ActionLogImplementation:
             channel_id = await self.watchlogchannel(member.guild.id, member.id)
             await send(channel_id, watch_kicks=True)
 
-    async def on_member_update(self, before, after):
-        # print(before.guild.name, before.guild.id)
-        enabled = await self.enabled(after.guild.id)
-        if 'on_nickname_change' in enabled:
-            if before.nick != after.nick:
-                channel_id = await self.action_log_channel(before.guild.id)
-                async for log in after.guild.audit_logs(limit=1):
-                    try:
-                        if log.user != after:
-                            await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
-                                                              action=f"Update Nickname",
-                                                              reason=f"Before: "
-                                                                     f"{before.display_name}#{before.discriminator}\n"
-                                                                     f"After: "
-                                                                     f"{after.display_name}#{after.discriminator}\n"
-                                                                     f"Moderator: "
-                                                                     f"{log.user.display_name}#{log.user.discriminator}",
-                                                              )
-                        else:
-                            await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
-                                                              action=f"Nickname Change: ",
-                                                              reason=f"Before: "
-                                                                     f"{before.display_name}#{before.discriminator}\n"
-                                                                     f"After: "
-                                                                     f"{after.display_name}#{after.discriminator}",
-                                                              userid=after.id)
-                    except AttributeError:
-                        pass
-
-        if 'on_avatar_change' in enabled:
-            if before.avatar_url != after.avatar_url:
-                channel_id = await self.action_log_channel(before.guild.id)
-                self.e.set_thumbnail(url=after.avatar_url)
-                self.e.set_footer(text="This was the previous avatar",
-                                  icon_url=before.avatar_url)
-                await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
-                                                  action=f"Avatar Change: "
-                                                         f"{after.display_name}#{after.discriminator}",
-                                                  userid=after.id)
-        if ('on_role_given', 'on_role_removed', 'on_moderator_commands') in enabled:
-            if before.roles != after.roles:
-                channel_id = await self.action_log_channel(before.guild.id)
-                async for log in after.guild.audit_logs(limit=1):
-                    try:
-                        if log.user != after:
-                            async def mod_roles(give_remove, from_to):
-                                roles = '\n'.join(list(n.mention for n in log.roles))
-                                await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
-                                                                  action=f"Moderator Change: {give_remove} "
-                                                                         f"Role {from_to} "
-                                                                         f"{after.display_name}#{after.discriminator}",
-                                                                  reason=f"Roles: {roles}"
-                                                                         f"Moderator: "
-                                                                         f"{log.user.display_name}#"
-                                                                         f"{log.user.discriminator}"
-                                                                  )
-                            if log.roles in after.roles:
-                                if ('on_role_given', 'on_moderator_commands') in enabled:
-                                    await mod_roles('Give', 'To')
-                            else:
-                                if ('on_role_removed', 'on_moderator_commands') in enabled:
-                                    await mod_roles('Removed', 'From')
-
-                        else:
-                            async def self_roles(give_remove, to_from):
-                                roles = '\n'.join(list(n.mention for n in log.roles))
-                                await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
-                                                                  action=f"Role {give_remove} {to_from} Self",
-                                                                  reason=f"Roles: {roles}",
-                                                                  userid=after.id
-                                                                  )
-                            if log.roles in after.roles:
-                                if 'on_role_given' in enabled:
-                                    await self_roles('Given', 'To')
-                            else:
-                                if 'on_role_removed' in enabled:
-                                    await self_roles('Removed', 'From')
-                    except AttributeError:
-                        pass
+    # async def on_member_update(self, before, after):
+    #     # print(before.guild.name, before.guild.id)
+    #     enabled = await self.enabled(after.guild.id)
+    #     if 'on_nickname_change' in enabled:
+    #         if before.nick != after.nick:
+    #             channel_id = await self.action_log_channel(before.guild.id)
+    #             async for log in after.guild.audit_logs(limit=1):
+    #                 try:
+    #                     if log.user != after:
+    #                         await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+    #                                                           action=f"Update Nickname",
+    #                                                           reason=f"Before: "
+    #                                                                  f"{before.display_name}#{before.discriminator}\n"
+    #                                                                  f"After: "
+    #                                                                  f"{after.display_name}#{after.discriminator}\n"
+    #                                                                  f"Moderator: "
+    #                                                                  f"{log.user.display_name}#{log.user.discriminator}",
+    #                                                           )
+    #                     else:
+    #                         await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+    #                                                           action=f"Nickname Change: ",
+    #                                                           reason=f"Before: "
+    #                                                                  f"{before.display_name}#{before.discriminator}\n"
+    #                                                                  f"After: "
+    #                                                                  f"{after.display_name}#{after.discriminator}",
+    #                                                           userid=after.id)
+    #                 except AttributeError:
+    #                     pass
+    #
+    #     if 'on_avatar_change' in enabled:
+    #         if before.avatar_url != after.avatar_url:
+    #             channel_id = await self.action_log_channel(before.guild.id)
+    #             self.e.set_thumbnail(url=after.avatar_url)
+    #             self.e.set_footer(text="This was the previous avatar",
+    #                               icon_url=before.avatar_url)
+    #             await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+    #                                               action=f"Avatar Change: "
+    #                                                      f"{after.display_name}#{after.discriminator}",
+    #                                               userid=after.id)
+    #     if ('on_role_given', 'on_role_removed', 'on_moderator_commands') in enabled:
+    #         if before.roles != after.roles:
+    #             channel_id = await self.action_log_channel(before.guild.id)
+    #             async for log in after.guild.audit_logs(limit=1):
+    #                 try:
+    #                     if log.user != after:
+    #                         async def mod_roles(give_remove, from_to):
+    #                             roles = '\n'.join(list(n.mention for n in log.roles))
+    #                             await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+    #                                                               action=f"Moderator Change: {give_remove} "
+    #                                                                      f"Role {from_to} "
+    #                                                                      f"{after.display_name}#{after.discriminator}",
+    #                                                               reason=f"Roles: {roles}"
+    #                                                                      f"Moderator: "
+    #                                                                      f"{log.user.display_name}#"
+    #                                                                      f"{log.user.discriminator}"
+    #                                                               )
+    #                         if log.roles in after.roles:
+    #                             if ('on_role_given', 'on_moderator_commands') in enabled:
+    #                                 await mod_roles('Give', 'To')
+    #                         else:
+    #                             if ('on_role_removed', 'on_moderator_commands') in enabled:
+    #                                 await mod_roles('Removed', 'From')
+    #
+    #                     else:
+    #                         async def self_roles(give_remove, to_from):
+    #                             roles = '\n'.join(list(n.mention for n in log.roles))
+    #                             await SendLogs(self.bot).send_log(e=self.e, channel=channel_id,
+    #                                                               action=f"Role {give_remove} {to_from} Self",
+    #                                                               reason=f"Roles: {roles}",
+    #                                                               userid=after.id
+    #                                                               )
+    #                         if log.roles in after.roles:
+    #                             if 'on_role_given' in enabled:
+    #                                 await self_roles('Given', 'To')
+    #                         else:
+    #                             if 'on_role_removed' in enabled:
+    #                                 await self_roles('Removed', 'From')
+    #                 except AttributeError:
+    #                     pass
 
     async def on_guild_channel_create(self, channel):
         enabled = await self.enabled(channel.guild.id)
