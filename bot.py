@@ -29,14 +29,14 @@ initial_extensions = ['cogs.JokesCommands',
 
 # cogs to load
 
-
+# [2018-10-21 19:30:50] [DEBUG  ] discord.gateway: For Shard ID None: WebSocket Event: {'t': 'PRESENCE_UPDATE', 's': 17, 'op': 0, 'd': {'user': {'id': '483455384183504898'}, 'status': 'online', 'roles': ['110374777914417152', '318748748010487808', '132106771975110656'], 'nick': None, 'guild_id': '110373943822540800', 'game': {'url': 'https://twitch.tv/DanyloTorres', 'type': 1, 'name': 'Use ?comandos | Eu estou em 20 servidores', 'id': 'ec0b28a579ecb4bd', 'created_at': 1540110645386}, 'activities': [{'url': 'https://twitch.tv/DanyloTorres', 'type': 1, 'name': 'Use ?comandos | Eu estou em 20 servidores', 'id': 'ec0b28a579ecb4bd', 'created_at': 1540110645386}]}}
 @contextlib.contextmanager
 def setup_logging():
     try:
         # __enter__
         # haven't set this up yet. might've maybe copied a bit of it
-        logging.getLogger('discord').setLevel(logging.INFO)
-        logging.getLogger('discord.http').setLevel(logging.WARNING)
+        logging.getLogger('discord').setLevel(logging.DEBUG)
+        logging.getLogger('discord.http').setLevel(logging.DEBUG)
 
         log = logging.getLogger()
         log.setLevel(logging.INFO)
@@ -113,6 +113,8 @@ class MathsBot(commands.Bot):
         # tell us bot is online
         print(f'Ready: {self.user} (ID: {self.user.id})')
         print(self.uptime)
+        for gui in self.guilds:
+            print(len(gui.members), gui.name)
 
     async def on_socket_response(self, msg):
         # whenever we get a socket response (ie. typing start, any message, reaction, most basic events

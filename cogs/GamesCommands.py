@@ -966,7 +966,7 @@ class Games:
                     if limit == 1000:
                         lb = Leaderboard(ctx)
                         leaderboad = await lb.into_leaderboard(game='guess', record=counter, attempts=counter,
-                                                               wrong=0, correct=None, guildid=ctx.guild.id)
+                                                               wrong=None, correct=None, guildid=ctx.guild.id)
                     # otherwise leaderboard is false
                     else:
                         leaderboad = False
@@ -982,7 +982,7 @@ class Games:
                 if limit == 1000:
                     lb = Leaderboard(ctx)
                     intolb = await lb.into_leaderboard(game='guess', record=None, attempts=counter,
-                                                       wrong=0, correct=None, guildid=ctx.guild.id)
+                                                       wrong=None, correct=None, guildid=ctx.guild.id)
                 break
 
 
