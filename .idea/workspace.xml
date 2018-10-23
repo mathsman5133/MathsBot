@@ -4,6 +4,8 @@
     <list default="true" id="259e294a-c465-4ea9-b188-0f2b11b12cff" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cogs/GamesCommands.py" beforeDir="false" afterPath="$PROJECT_DIR$/cogs/GamesCommands.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cogs/StatsCommands.py" beforeDir="false" afterPath="$PROJECT_DIR$/cogs/StatsCommands.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -14,13 +16,34 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="bot.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="bot.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/bot.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="150">
-              <caret line="91" column="17" lean-forward="true" selection-start-line="91" selection-start-column="17" selection-end-line="91" selection-end-column="17" />
+            <state relative-caret-position="290">
+              <caret line="210" column="15" selection-start-line="210" selection-start-column="15" selection-end-line="210" selection-end-column="15" />
               <folding>
                 <element signature="e#0#66#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="GamesCommands.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/cogs/GamesCommands.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="157">
+              <caret line="321" column="50" lean-forward="true" selection-start-line="321" selection-start-column="50" selection-end-line="321" selection-end-column="50" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="StatsCommands.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/cogs/StatsCommands.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="714">
+              <caret line="47" selection-start-line="47" selection-end-line="47" />
+              <folding>
+                <element signature="e#0#14#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -29,8 +52,8 @@
       <file leaf-file-name="ActionLog.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/cogs/ActionLog.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="218">
-              <caret line="1284" column="23" selection-start-line="1284" selection-start-column="23" selection-end-line="1284" selection-end-column="23" />
+            <state relative-caret-position="14093">
+              <caret line="840" column="21" selection-start-line="840" selection-start-column="21" selection-end-line="840" selection-end-column="21" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
               </folding>
@@ -59,9 +82,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>watch_log_</find>
-      <find>on_raw</find>
-      <find>sendlogs</find>
       <find>send_a</find>
       <find>hack</find>
       <find>add_</find>
@@ -87,8 +107,11 @@
       <find>on_m</find>
       <find>on_mess</find>
       <find>help</find>
-      <find>async def help</find>
       <find>_help</find>
+      <find>async def help</find>
+      <find>on_member_update</find>
+      <find>on_so</find>
+      <find>so</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -100,20 +123,20 @@
       <list>
         <option value="$PROJECT_DIR$/cogs/utils/__init__.py" />
         <option value="$PROJECT_DIR$/cogs/JokesCommands.py" />
-        <option value="$PROJECT_DIR$/cogs/GamesCommands.py" />
         <option value="$PROJECT_DIR$/cogs/tools.py" />
         <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/cogs/MathsBot.ipynb" />
         <option value="$USER_HOME$/Documents/GitHub/hacktoberbot-1/bot/cogs/candy_collection.py" />
         <option value="$USER_HOME$/Documents/GitHub/hacktoberbot-1/bot/cogs/resources/candy_collection.json" />
         <option value="$PROJECT_DIR$/cogs/Hangman.py" />
-        <option value="$PROJECT_DIR$/cogs/StatsCommands.py" />
         <option value="$PROJECT_DIR$/cogs/admin.py" />
         <option value="$PROJECT_DIR$/cogs/actionlogs.py" />
-        <option value="$PROJECT_DIR$/cogs/ActionLog.py" />
         <option value="$PROJECT_DIR$/cogs/Mod.py" />
-        <option value="$PROJECT_DIR$/bot.py" />
         <option value="$PROJECT_DIR$/cogs/utils/creds.py" />
+        <option value="$PROJECT_DIR$/cogs/ActionLog.py" />
+        <option value="$PROJECT_DIR$/bot.py" />
+        <option value="$PROJECT_DIR$/cogs/StatsCommands.py" />
+        <option value="$PROJECT_DIR$/cogs/GamesCommands.py" />
       </list>
     </option>
   </component>
@@ -128,6 +151,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -150,7 +174,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -268,7 +291,14 @@
       <option name="project" value="LOCAL" />
       <updated>1540035107846</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="stop on_member_update to stop bot from crashing">
+      <created>1540105100845</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1540105100845</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -277,10 +307,10 @@
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24960254" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.3163752" side_tool="true" visible="true" weight="0.33452594" />
+      <window_info active="true" anchor="bottom" id="Event Log" order="7" sideWeight="0.3171701" side_tool="true" visible="true" weight="0.33452594" />
       <window_info anchor="bottom" id="Version Control" order="7" />
       <window_info anchor="bottom" id="Python Console" order="7" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.6836248" visible="true" weight="0.33452594" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.6828299" weight="0.33452594" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="7" sideWeight="0.49920508" weight="0.3291592" />
       <window_info id="Favorites" order="2" side_tool="true" />
@@ -305,7 +335,8 @@
     <MESSAGE value="fix this shit" />
     <MESSAGE value="first commit for actionlog" />
     <MESSAGE value="coroutine get_prefix fctn" />
-    <option name="LAST_COMMIT_MESSAGE" value="coroutine get_prefix fctn" />
+    <MESSAGE value="stop on_member_update to stop bot from crashing" />
+    <option name="LAST_COMMIT_MESSAGE" value="stop on_member_update to stop bot from crashing" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -331,21 +362,12 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../actionlogs.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/cogs/admin.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3485">
           <caret line="214" column="16" selection-start-line="214" selection-start-column="16" selection-end-line="214" selection-end-column="16" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -353,9 +375,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1496">
           <caret line="93" column="47" selection-start-line="93" selection-start-column="40" selection-end-line="93" selection-end-column="47" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -391,9 +410,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="935">
           <caret line="60" selection-start-line="60" selection-end-line="60" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -418,9 +434,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="5168">
           <caret line="313" column="31" lean-forward="true" selection-start-line="313" selection-start-column="31" selection-end-line="313" selection-end-column="31" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -438,9 +451,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="221">
           <caret line="15" column="13" selection-start-line="15" selection-start-column="13" selection-end-line="15" selection-end-column="13" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -448,9 +458,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="136">
           <caret line="8" selection-start-line="8" selection-end-line="9" />
-          <folding>
-            <element signature="e#0#32#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -458,9 +465,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="51">
           <caret line="8" selection-start-line="8" selection-end-line="8" />
-          <folding>
-            <element signature="e#0#32#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -512,9 +516,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="255">
           <caret line="15" column="13" lean-forward="true" selection-start-line="15" selection-start-column="13" selection-end-line="15" selection-end-column="13" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -522,9 +523,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="136">
           <caret line="8" selection-start-line="8" selection-end-line="9" />
-          <folding>
-            <element signature="e#0#32#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -532,9 +530,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="136">
           <caret line="8" lean-forward="true" selection-start-line="8" selection-end-line="8" />
-          <folding>
-            <element signature="e#0#32#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -600,9 +595,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="340">
           <caret line="20" selection-start-line="20" selection-end-line="20" />
-          <folding>
-            <element signature="e#27#41#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -616,23 +608,10 @@
     <entry file="file://$PROJECT_DIR$/cogs/utils/__init__.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/cogs/StatsCommands.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="99">
-          <caret line="126" column="51" selection-start-line="126" selection-start-column="51" selection-end-line="126" selection-end-column="51" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cogs/Mod.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="99">
           <caret line="107" column="14" selection-start-line="107" selection-start-column="4" selection-end-line="107" selection-end-column="14" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -647,19 +626,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="99">
           <caret line="51" column="56" selection-start-line="51" selection-start-column="56" selection-end-line="51" selection-end-column="56" />
-          <folding>
-            <element signature="e#0#32#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cogs/GamesCommands.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5746">
-          <caret line="338" column="14" selection-start-line="338" selection-start-column="4" selection-end-line="338" selection-end-column="14" />
-          <folding>
-            <element signature="e#0#32#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -667,9 +633,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2074">
           <caret line="122" column="48" selection-start-line="122" selection-start-column="48" selection-end-line="122" selection-end-column="48" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -677,9 +640,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1853">
           <caret line="109" column="19" selection-start-line="109" selection-start-column="12" selection-end-line="109" selection-end-column="19" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -687,9 +647,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="918">
           <caret line="54" column="53" selection-start-line="54" selection-start-column="49" selection-end-line="54" selection-end-column="53" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -702,8 +659,30 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/cogs/ActionLog.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="218">
-          <caret line="1284" column="23" selection-start-line="1284" selection-start-column="23" selection-end-line="1284" selection-end-column="23" />
+        <state relative-caret-position="14093">
+          <caret line="840" column="21" selection-start-line="840" selection-start-column="21" selection-end-line="840" selection-end-column="21" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/mathsbot.log">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-969" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/PycharmProjects/rewrite/venv/Lib/site-packages/discord/client.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="115">
+          <caret line="224" selection-start-line="224" selection-end-line="224" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cogs/StatsCommands.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="714">
+          <caret line="47" selection-start-line="47" selection-end-line="47" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
           </folding>
@@ -712,11 +691,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/bot.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="91" column="17" lean-forward="true" selection-start-line="91" selection-start-column="17" selection-end-line="91" selection-end-column="17" />
+        <state relative-caret-position="290">
+          <caret line="210" column="15" selection-start-line="210" selection-start-column="15" selection-end-line="210" selection-end-column="15" />
           <folding>
             <element signature="e#0#66#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cogs/GamesCommands.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="157">
+          <caret line="321" column="50" lean-forward="true" selection-start-line="321" selection-start-column="50" selection-end-line="321" selection-end-column="50" />
         </state>
       </provider>
     </entry>
