@@ -6,12 +6,15 @@ import sys
 import datetime
 import traceback
 import sqlite3
-from collections import Counter, deque
+from collections import deque
 import contextlib
 import aiosqlite
 import os
+import json
+import functools
 
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
+json_location = os.path.join(os.getcwd(), 'cogs', 'utils', 'mathsbot.json')
 conn = sqlite3.connect(db_path)
 # conn is for routine db entries/fetch (ie get prefix)
 c = conn.cursor()
@@ -29,7 +32,7 @@ initial_extensions = ['cogs.JokesCommands',
 
 # cogs to load
 
-# [2018-10-21 19:30:50] [DEBUG  ] discord.gateway: For Shard ID None: WebSocket Event: {'t': 'PRESENCE_UPDATE', 's': 17, 'op': 0, 'd': {'user': {'id': '483455384183504898'}, 'status': 'online', 'roles': ['110374777914417152', '318748748010487808', '132106771975110656'], 'nick': None, 'guild_id': '110373943822540800', 'game': {'url': 'https://twitch.tv/DanyloTorres', 'type': 1, 'name': 'Use ?comandos | Eu estou em 20 servidores', 'id': 'ec0b28a579ecb4bd', 'created_at': 1540110645386}, 'activities': [{'url': 'https://twitch.tv/DanyloTorres', 'type': 1, 'name': 'Use ?comandos | Eu estou em 20 servidores', 'id': 'ec0b28a579ecb4bd', 'created_at': 1540110645386}]}}
+
 @contextlib.contextmanager
 def setup_logging():
     try:
@@ -62,33 +65,9 @@ def run_bot():
     # run bot
 
 
-async def find_prefix(bot, msg):
-    # callable prefix
-    bot_id = bot.user.id
-    # bot user id
-    prefixes = [f'<@{bot_id}> ', f'<@!{bot_id}> ']
-    # @mathsbot is always going to be a prefix
-    if msg.guild is None:
-        prefixes.append('!')
-        # prefix is ! in dms
-    else:
-        async with aiosqlite.connect(db_path) as db:
-            c = await db.execute("SELECT prefix FROM guildinfo WHERE guildid = :id",
-                                 {'id': msg.guild.id})
-            dump = await c.fetchall()
-        # get prefix from db for guildid
-        if len(dump) == 0:
-            # if no prefix in db/set prefixes are ! ?
-            prefixes.extend(['!', '?'])
-        else:
-            # otherwise add prefix in db to the prefixes (mentions)
-            prefixes.extend([n[0] for n in dump])
-    return prefixes
-
-
 class MathsBot(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix=find_prefix, case_insensitive=True,
+        super().__init__(command_prefix=self.find_prefix, case_insensitive=True,
                          fetch_offline_members=False)
         # setup bot
         self.remove_command(name='help')
@@ -98,6 +77,14 @@ class MathsBot(commands.Bot):
         self.webhook = webhook
         # assign error log webhook to bot, make it easy to call elsewhere
 
+        with open(json_location) as guildinfo:
+            self.loaded = json.load(guildinfo)
+
+        self.get_actionlog_toggle = dict()
+        for info in self.loaded['guild_settings']:
+            guildid = info['guildid']
+            self.get_actionlog_toggle[guildid] = info
+
         for extension in initial_extensions:
             # load cogs
             try:
@@ -105,6 +92,49 @@ class MathsBot(commands.Bot):
             except Exception as e:
                 print(f'Failed to load extension {extension}.', file=sys.stderr)
                 print(e)
+
+    def get_guild_prefix(self, guildid):
+        pref = []
+        for prefixes in self.loaded['prefixes']:
+            if prefixes['guildid'] == guildid:
+                pref.append(prefixes['prefix'])
+        return pref
+
+    def find_prefix(self, bot, msg):
+        # callable prefix
+        bot_id = bot.user.id
+        # bot user id
+
+        prefixes = [f'<@{bot_id}> ', f'<@!{bot_id}> ']
+        # @mathsbot is always going to be a prefix
+
+        if msg.guild is None:
+            prefixes.append('!')
+            # prefix is ! in dms
+
+        else:
+            try:
+                prefix = self.get_guild_prefix(msg.guild.id)
+                prefixes.extend(prefix)
+                if not prefix:
+                    prefixes.append('!')
+            except KeyError:
+                prefixes.extend(['!', '?'])
+
+        return prefixes
+
+    def save_to_json(self):
+        """
+        Save json to the file.
+        """
+
+        with open(json_location, 'w') as outfile:
+            json.dump(self.loaded, outfile)
+
+    async def save_json(self):
+        thing = functools.partial(self.save_to_json)
+
+        await self.loop.run_in_executor(None, thing)
 
     async def on_ready(self):
         if not hasattr(self, 'uptime'):
@@ -155,23 +185,6 @@ class MathsBot(commands.Bot):
         e.timestamp = datetime.datetime.utcnow()
         # send to log channel with webhook attribute assigned to bot earlier
         self.webhook.send(embed=e)
-
-    async def get_prefixes(self, msg):
-        # gonna use later to find prefix of guild/msg etc.
-        return await find_prefix(self, msg)
-
-    async def set_guild_prefixes(self, msg, prefix):
-        # update a prefix for a guild
-        if len(prefix) == 0:
-            # raise bad argument (no prefix)
-            raise commands.BadArgument("Please give me a prefix to set!")
-
-        async with aiosqlite.connect(db_path) as db:
-            # override current prefix in db with new one
-            await db.execute("UPDATE guildinfo SET prefix = :pref WHERE guildid = :id",
-                             {'pref': prefix[0], 'id': msg.guild.id})
-            # save changes
-            await db.commit()
 
 
     def send_guild_stats(self, e, guild):
