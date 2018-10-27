@@ -38,8 +38,8 @@ def setup_logging():
     try:
         # __enter__
         # haven't set this up yet. might've maybe copied a bit of it
-        logging.getLogger('discord').setLevel(logging.DEBUG)
-        logging.getLogger('discord.http').setLevel(logging.DEBUG)
+        logging.getLogger('discord').setLevel(logging.INFO)
+        logging.getLogger('discord.http').setLevel(logging.INFO)
 
         log = logging.getLogger()
         log.setLevel(logging.INFO)
