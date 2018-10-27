@@ -42,9 +42,14 @@ class BannedMember(commands.Converter):
         ban_list = await ctx.guild.bans()
         try:
             member_id = int(argument, base=10)
-            member = discord.utils.find(lambda u: u.user == member_id, ban_list)
+            member = discord.utils.find(lambda u: u.user.id == member_id, ban_list)
         except ValueError:
+            member = discord.utils.find(lambda u: str(u.user) == argument, ban_list)
+
+        print(member)
+        if member is None:
             raise commands.BadArgument(f'{argument} is not a valid user id')
+
         return member
 
 
@@ -56,8 +61,6 @@ class ActionReason(commands.Converter):
         if len(reason) > 512:
             raise commands.BadArgument("Reason is too long")
         return reason
-
-
 
 class Prefix(commands.Converter):
     async def convert(self, ctx, argument):
@@ -72,6 +75,10 @@ class Mod:
     def __init__(self, bot):
         self.bot = bot
 
+    async def __error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(error)
+
     @commands.group(name="prefix", invoke_without_command=True)
     async def prefix(self, ctx):
         """Manages a servers prefixes.
@@ -80,33 +87,113 @@ class Mod:
 
         Remember <@496558571605983262> is always a prefix.
         """
-        prefixes = await self.bot.get_prefixes(ctx.message)
-        await ctx.send(f'The prefix for {ctx.guild.name} is {prefixes[2] or None}. '
+        try:
+            prefixes = self.bot.get_guild_prefix(ctx.guild.id)
+        except KeyError:
+            return await ctx.send("The default prefixes are `!` and `?`. Remember you can always get my "
+                                  f"attention with <@{self.bot.user.id}>` help`!")
+        string = f'`@{ctx.guild.me.display_name}`, '
+        for n in prefixes:
+            string += f"`{n}`, "
+        if len(prefixes) == 0:
+            string += "`!`, "
+        await ctx.send(f'The prefix(s) for {ctx.guild.name} are {string}'
                        f'Remember you can mention me as a prefix!')
 
     @prefix.command(ignore_extra=False)
-    async def change(self, ctx, prefix: Prefix):
+    async def add(self, ctx, prefix: Prefix):
         """Adds a prefix for server.
                     PARAMETERS: [Prefix name]
                     EXAMPLE: `prefix add !@`
                     RESULT: Adds prefix !@"""
         # get list of current prefixes
-        current_prefix = await self.bot.get_prefixes(ctx.message)
+        try:
+            current_prefixes = self.bot.get_guild_prefix(ctx.guild.id)
+            if prefix in current_prefixes:
+                return await ctx.send("Prefix already registered!")
+        except KeyError as e:
+            print(e)
+
         # if prefix changing to is already in the list of prefixes
-        if prefix in current_prefix:
-            return await ctx.send("Prefix already registered!")
+
         try:
             # update prefix
-            await self.bot.set_guild_prefixes(ctx.message, prefix)
+            d = {"guildid": ctx.guild.id, "prefix": prefix}
+            self.bot.loaded['prefixes'].append(d)
+            await self.bot.save_json()
+
         except Exception as e:
-            await ctx.send(f"{e}\N{THUMBS DOWN SIGN}")
-        else:
-            await ctx.send(f"\N{OK HAND SIGN} Prefix now set to: `{prefix}`. Remember you can always get my "
-                           f"attention with <@{self.bot.user.id}>` help`!")
+            return await ctx.send(f"{e}\N{THUMBS DOWN SIGN}")
+
+        prefixes = self.bot.get_guild_prefix(ctx.guild.id)
+        string = f'`@{ctx.guild.me.display_name}`, '
+        for n in prefixes:
+            string += f"`{n}`, "
+        if len(prefixes) == 0:
+            string += "`!`, "
+        await ctx.send(f"\N{OK HAND SIGN} Current prefixes now set to: {string}. Remember you can always get my "
+                       f"attention with <@{self.bot.user.id}>` help`!")
+
+    @prefix.command(ignore_extra=False)
+    async def remove(self, ctx, prefix: Prefix):
+        try:
+            current_prefixes = self.bot.get_guild_prefix(ctx.guild.id)
+
+            # if prefix changing to is already in the list of prefixes
+            if prefix not in current_prefixes:
+                return await ctx.send("Prefix not registered!")
+
+        except KeyError:
+            return await ctx.send("No prefixes registered")
+
+        try:
+            # update prefix
+            d = {'guildid': ctx.guild.id, 'prefix': prefix}
+            self.bot.loaded['prefixes'].remove(d)
+            await self.bot.save_json()
+
+        except Exception as e:
+            return await ctx.send(f"{e}\N{THUMBS DOWN SIGN}")
+
+        prefixes = self.bot.get_guild_prefix(ctx.guild.id)
+        string = f'`@{ctx.guild.me.display_name}`, '
+        for n in prefixes:
+            string += f"`{n}`, "
+        if len(prefixes) == 0:
+            string += "`!`, "
+        await ctx.send(f"\N{OK HAND SIGN} Current prefixes now set to: {string}. Remember you can always get my "
+                       f"attention with <@{self.bot.user.id}>` help`!")
+
+    @prefix.command()
+    async def clear(self, ctx):
+        try:
+            current_prefixes = self.bot.get_guild_prefix(ctx.guild.id)
+        except KeyError:
+            return await ctx.send("No prefixes registered")
+
+        try:
+            # update prefix
+            for p in current_prefixes:
+                d = {'guildid': ctx.guild.id, 'prefix': p}
+                self.bot.loaded['prefixes'].remove(d)
+            await self.bot.save_json()
+
+        except Exception as e:
+            return await ctx.send(f"{e}\N{THUMBS DOWN SIGN}")
+
+        prefixes = self.bot.get_guild_prefix(ctx.guild.id)
+        string = f'`@{ctx.guild.me.display_name}`, '
+        for n in prefixes:
+            string += f"`{n}`, "
+
+        await ctx.send(f"\N{OK HAND SIGN} Current prefixes now set to default prefixes: {string}."
+                       f" Remember you can always get my "
+                       f"attention with <@{self.bot.user.id}>` help`!")
 
     @commands.command()
-    async def kick(self, ctx, user: discord.Member, *, reason: ActionReason):
+    async def kick(self, ctx, user: discord.Member, *, reason: ActionReason=None):
         # set reason if none supplied
+        print('ok')
         if reason is None:
             reason = f'Removed by {ctx.author} ({ctx.author.id})'
         # kick
@@ -124,12 +211,12 @@ class Mod:
             pass
 
     @commands.command()
-    async def ban(self, ctx, user: MemberId, *, reason: ActionReason):
+    async def ban(self, ctx, user: MemberId, *, reason: ActionReason=None):
         # set reason if none supplied
         if reason is None:
             reason = f'Banned by {ctx.author} ({ctx.author.id})'
         # ban
-        await ctx.guild.ban(id=discord.Object(id=user), reason=reason)
+        await ctx.guild.ban(discord.Object(id=user), reason=reason)
         s = await ctx.send(reason)
         await asyncio.sleep(5)
         # delete reason response after 5
@@ -140,22 +227,23 @@ class Mod:
             pass
 
     @commands.command()
-    async def unban(self, ctx, user: BannedMember, *, reason: ActionReason):
+    async def unban(self, ctx, user: BannedMember, *, reason: ActionReason=None):
         # set reason
         if not reason:
             reason = f'Unbanned by {ctx.author} ({ctx.author.id})'
+
         # unban
-        await ctx.guild.unban(user.user, reason)
+        await ctx.guild.unban(user=user.user, reason=reason)
         # send response reason (why was banned)
-        if user.reason:
-            s = await ctx.send(f"Unbanned {user.user} ({user.user.id}) - banned for {user.reason}")
+        if reason:
+            s = await ctx.send(f"Unbanned {user.user.name} ({user.user.id}) - banned for {user.reason}")
         else:
-            s = await ctx.send(f"Unbanned {user.user} ({user.user.id})")
+            s = await ctx.send(f"Unbanned {user.user.name} ({user.user.id})")
         await asyncio.sleep(5)
         # delete response reason
         await s.delete()
         try:
-            await ctx.delete()
+            await ctx.message.delete()
         except discord.Forbidden:
             pass
 
