@@ -106,3 +106,4 @@ venv.bak/
 **/creds.py
 **/database.db
 admin.py
+**/mathsbot.json
