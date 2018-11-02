@@ -277,8 +277,8 @@ class Leaderboard:
         embed.set_author(name=f"Leaderboard - {user.display_name}#{user.discriminator}")
         await self.ctx.send(embed=embed)
 
-    async def into_leaderboard(self, game=None, record=None, attempts=None, wrong=None, correct=None,
-                               guildid=None):
+    async def into_leaderboard(self, game, record, attempts, wrong, correct,
+                               guildid):
         # insert stuff into leaderboard table in db. Any command that is on the leaderboard will insert stuff into here
         # on completion of command
         # author id

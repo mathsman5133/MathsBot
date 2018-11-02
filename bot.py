@@ -80,11 +80,6 @@ class MathsBot(commands.Bot):
         with open(json_location) as guildinfo:
             self.loaded = json.load(guildinfo)
 
-        self.get_actionlog_toggle = dict()
-        for info in self.loaded['guild_settings']:
-            guildid = info['guildid']
-            self.get_actionlog_toggle[guildid] = info
-
         for extension in initial_extensions:
             # load cogs
             try:
@@ -99,6 +94,31 @@ class MathsBot(commands.Bot):
             if prefixes['guildid'] == guildid:
                 pref.append(prefixes['prefix'])
         return pref
+
+    def get_ignored(self, guildid, cid='all'):
+        ignored = []
+        for users_channels in self.loaded['ignored']:
+            if cid == 'all':
+                if users_channels['guildid'] == guildid:
+                    ignored.append(users_channels['id'])
+            else:
+                if (users_channels['id'] == cid) and (users_channels['guildid'] == guildid):
+                    ignored.append(users_channels['id'])
+        return ignored
+
+    def get_global_ignored(self, id):
+        ignored = []
+        for users_channels in self.loaded['global_ignored']:
+            if id == 'all':
+                ignored.append(users_channels['id'])
+            else:
+                if users_channels['id'] == id:
+                    ignored.append(users_channels['id'])
+        return ignored
+
+    def get_blacklisted(self, id):
+        for guildids in self.loaded['blacklisted_guilds']:
+            return guildids['id'] == id
 
     def find_prefix(self, bot, msg):
         # callable prefix
@@ -155,6 +175,16 @@ class MathsBot(commands.Bot):
         if message.author.bot:
             # ignore command if author is a bot
             return
+        if message.author.id != 230214242618441728:
+            return
+        ignored = self.get_ignored(message.guild.id, cid='all')
+        ignored.extend(self.get_global_ignored('all'))
+        if message.guild.id in ignored:
+            return
+        if message.channel.id in ignored:
+            return
+        if message.author.id in ignored:
+            return
         # send rest of messages through (to look for prefix, command etc.)
         await self.process_commands(message)
 
@@ -209,6 +239,17 @@ class MathsBot(commands.Bot):
         self.webhook.send(embed=e)
 
     async def on_guild_join(self, guild):
+        if self.get_blacklisted(guild.id):
+            for channel in guild.text_channels:
+                try:
+                    channel.send("It appears this server has been blacklisted :thinking_face: "
+                                 "This could be because"
+                                 " you have too many bots or members spamming messages that will lag my client. "
+                                 "If you believe this is incorrect, please join my support server: xxyyzz")
+                    return await guild.leave()
+                except discord.Forbidden:
+                    pass
+            return await guild.leave()
         # when I join a guild send message to error log channel that I've joined a guild
         e = discord.Embed(colour=0x53dda4, title='New Guild')  # green colour
         self.send_guild_stats(e, guild)
