@@ -308,16 +308,16 @@ class Leaderboard:
                     except TypeError:
                         pass
                 # update a player's game in leaderboard adding corrects/attempts/games etc.
-                if not attempts:
+                if attempts == 'Nan':
                     attempts = None
                 else:
                     attempts = dump[0][2] + attempts
-                if not wrong:
+                if wrong == 'Nan':
                     wrong = None
                 else:
                     wrong = dump[0][3] + wrong
-                if not correct:
-                    correct = None
+                if correct == 'Nan':
+                    correct = 0
                 else:
                     correct = dump[0][4] + correct
                 await db.execute("UPDATE leaderboard SET games = :games,"
@@ -966,7 +966,7 @@ class Games:
                     if limit == 1000:
                         lb = Leaderboard(ctx)
                         leaderboad = await lb.into_leaderboard(game='guess', record=counter, attempts=counter,
-                                                               wrong=None, correct=None, guildid=ctx.guild.id)
+                                                               wrong='Nan', correct='Nan', guildid=ctx.guild.id)
                     # otherwise leaderboard is false
                     else:
                         leaderboad = False
@@ -981,8 +981,8 @@ class Games:
                 # insert all their fails into db
                 if limit == 1000:
                     lb = Leaderboard(ctx)
-                    intolb = await lb.into_leaderboard(game='guess', record=None, attempts=counter,
-                                                       wrong=None, correct=None, guildid=ctx.guild.id)
+                    intolb = await lb.into_leaderboard(game='guess', record='Nan', attempts=counter,
+                                                       wrong='Nan', correct='Nan', guildid=ctx.guild.id)
                 break
 
 
