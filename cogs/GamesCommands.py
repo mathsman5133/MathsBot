@@ -311,15 +311,15 @@ class Leaderboard:
                 if attempts == 'Nan':
                     attempts = None
                 else:
-                    attempts = dump[0][2] + attempts
+                    attempts = dump[0][2] + attempts or 0
                 if wrong == 'Nan':
                     wrong = None
                 else:
-                    wrong = dump[0][3] + wrong
+                    wrong = dump[0][3] + wrong or 0
                 if correct == 'Nan':
                     correct = 0
                 else:
-                    correct = dump[0][4] + correct
+                    correct = dump[0][4] + correct or 0
                 await db.execute("UPDATE leaderboard SET games = :games,"
                                  " attempts = :att, wrong = :wrong, correct = :corr "
                                  "WHERE userid = :id AND game = :game AND guildid = :guildid",
