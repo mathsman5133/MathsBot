@@ -227,8 +227,8 @@ class Jokes:
         embed.set_footer(text=f"Like this riddle? The number was {riddle[0][2]}. "
                               f"Type `.riddle {riddle[0][2]}` to get it again, "
                               f"or save it with `.riddlesave {riddle[0][2]}`", icon_url=ctx.author.avatar_url)
-        intolb = await lb.into_leaderboard(game='riddle', record=counter, attempts=counter,
-                                           wrong=counter, correct=0, guildid=ctx.guild.id)
+        intolb = await lb.into_leaderboard(game='riddle', record=counter or 1, attempts=counter or 1,
+                                           wrong=counter or 1, correct=0, guildid=ctx.guild.id)
         if intolb:
             embed.description = intolb
         await ctx.send(embed=embed)
