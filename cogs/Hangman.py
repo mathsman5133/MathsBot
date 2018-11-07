@@ -210,8 +210,8 @@ class Hangman:
 
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['hmstart'], no_pm=True)
-    async def hangmancreate(self, ctx):
+    @hangman.command(aliases=['start'], no_pm=True)
+    async def create(self, ctx):
         """Create a new hangman game. A random phrase will be selected.
             PARAMETERS: None
             EXAMPLE: `hangmancreate` or `hmstart`
@@ -233,8 +233,8 @@ class Hangman:
         embed.description = str(game)
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['hmstop', 'hmremove', 'hmend'], no_pm=True)
-    async def hangmandelete(self, ctx):
+    @hangman.command(aliases=['stop', 'remove', 'end'], no_pm=True)
+    async def delete(self, ctx):
         """Deletes your currently running game of hangman
             PARAMETERS: None
             EXAMPLE: `hangman delete` or `hmstop`
