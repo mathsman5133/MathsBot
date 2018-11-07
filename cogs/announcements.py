@@ -16,7 +16,7 @@ class Announcements:
         if isinstance(error, commands.BadArgument):
             await ctx.send(error)
 
-    @commands.group(name="notify")
+    @commands.group(name="notify", invoke_without_command=True)
     @checks.is_mod()
     async def _notify(self, ctx):
         if not ctx.me.guild_permissions.manage_roles:
