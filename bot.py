@@ -1,4 +1,5 @@
 from cogs.utils.creds import discordtoken, webhookid, webhooktoken
+from cogs.utils import checks
 import discord
 from discord.ext import commands
 import logging
@@ -21,13 +22,15 @@ c = conn.cursor()
 webhook = discord.Webhook.partial(id=webhookid, token=webhooktoken, adapter=discord.RequestsWebhookAdapter())
 # webhook for logging command errors
 TOKEN = discordtoken
-initial_extensions = ['cogs.JokesCommands',
-                      'cogs.GamesCommands',
-                      'cogs.StatsCommands',
-                      'cogs.Hangman',
-                      'cogs.ActionLog',
-                      'cogs.Mod',
-                      'cogs.admin'
+initial_extensions = ['cogs.jokes',
+                      'cogs.games',
+                      'cogs.stats',
+                      'cogs.hangman',
+                      'cogs.actionlog',
+                      'cogs.mod',
+                      'cogs.admin',
+                      'cogs.roles',
+                      'cogs.announcements'
                       ]
 
 # cogs to load
@@ -119,6 +122,33 @@ class MathsBot(commands.Bot):
     def get_blacklisted(self, id):
         for guildids in self.loaded['blacklisted_guilds']:
             return guildids['id'] == id
+
+    def get_colours(self, guildid, colour):
+        roles = []
+        for role in self.loaded['colour_roles']:
+            if (role['colour'] == colour) and (role['guildid'] == guildid):
+                roles.append(role)
+            if (colour == 'all') and (role['guildid'] == guildid):
+                roles.append(role)
+        return roles
+
+    def get_config(self, guildid, config, *, userid):
+        for role in self.loaded['config']:
+            if role['guildid'] == guildid:
+                return role[config]
+        return False
+
+    def get_admin(self, guildid, userid):
+        for admin in self.loaded['admin']:
+            if (admin['guildid'] == guildid) and (admin['userid'] == userid):
+                return True
+        return False
+
+    def get_mod(self, guildid, userid):
+        for mod in self.loaded['mod']:
+            if (mod['guildid'] == guildid) and (mod['userid'] == userid):
+                return True
+        return False
 
     def find_prefix(self, bot, msg):
         # callable prefix
