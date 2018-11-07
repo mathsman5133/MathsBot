@@ -2,7 +2,7 @@ from discord.ext import commands
 import discord
 import re
 import random
-from cogs.GamesCommands import Leaderboard
+from cogs.games import Leaderboard
 import os
 
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
