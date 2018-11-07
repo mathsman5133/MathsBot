@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
 import asyncio
-import aiosqlite
 import os
-import re
+from cogs.utils.help import HelpPaginator
+from cogs.utils import checks
 
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
@@ -62,6 +62,7 @@ class ActionReason(commands.Converter):
             raise commands.BadArgument("Reason is too long")
         return reason
 
+
 class Prefix(commands.Converter):
     async def convert(self, ctx, argument):
         # disallows prefixes pinging bot as they are reserved
@@ -80,6 +81,7 @@ class Mod:
             await ctx.send(error)
 
     @commands.group(name="prefix", invoke_without_command=True)
+    @checks.is_mod()
     async def prefix(self, ctx):
         """Manages a servers prefixes.
 
@@ -101,6 +103,7 @@ class Mod:
                        f'Remember you can mention me as a prefix!')
 
     @prefix.command(ignore_extra=False)
+    @checks.is_mod()
     async def add(self, ctx, prefix: Prefix):
         """Adds a prefix for server.
                     PARAMETERS: [Prefix name]
@@ -135,6 +138,7 @@ class Mod:
                        f"attention with <@{self.bot.user.id}>` help`!")
 
     @prefix.command(ignore_extra=False)
+    @checks.is_mod()
     async def remove(self, ctx, prefix: Prefix):
         try:
             current_prefixes = self.bot.get_guild_prefix(ctx.guild.id)
@@ -165,6 +169,7 @@ class Mod:
                        f"attention with <@{self.bot.user.id}>` help`!")
 
     @prefix.command()
+    @checks.is_mod()
     async def clear(self, ctx):
         try:
             current_prefixes = self.bot.get_guild_prefix(ctx.guild.id)
@@ -191,9 +196,10 @@ class Mod:
                        f"attention with <@{self.bot.user.id}>` help`!")
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, user: discord.Member, *, reason: ActionReason=None):
         # set reason if none supplied
-        print('ok')
         if reason is None:
             reason = f'Removed by {ctx.author} ({ctx.author.id})'
         # kick
@@ -211,6 +217,8 @@ class Mod:
             pass
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, user: MemberId, *, reason: ActionReason=None):
         # set reason if none supplied
         if reason is None:
@@ -227,6 +235,8 @@ class Mod:
             pass
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(ban_members=True)
     async def unban(self, ctx, user: BannedMember, *, reason: ActionReason=None):
         # set reason
         if not reason:
@@ -247,45 +257,193 @@ class Mod:
         except discord.Forbidden:
             pass
 
-    # @commands.group(name="actionlog")
-    # async def actionlog(self, ctx):
-    #     print('ok')
-    # @actionlog.command()
-    # async def config(self, ctx):
-    #     print('ok')
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_messages=True)
+    async def purge(self, ctx, num_messages: int=None):
+        if num_messages is None:
+            num_messages = 100
+        if num_messages > 100:
+            num_messages = 100
+        try:
+            deleted = await ctx.channel.purge(limit=num_messages)
+        except discord.Forbidden:
+            raise discord.Forbidden("I don't have `manage_messages` permission to run this command!")
+        msg = await ctx.send(f"Purged {len(deleted)} messages from this channel!")
+        await asyncio.sleep(5)
+        await msg.delete()
 
-    # @add.error
-    # async def prefix_add_error(self, ctx, error):
-    #     if isinstance(error, commands.TooManyArguments):
-    #         await ctx.send("You've given too many prefixes. Either quote it or only do it one by one.")
-    #
-    # @prefix.command(name="remove", ignore_extra=False)
-    # async def prefix_remove(self, ctx, prefix: Prefix):
-    #     """Removes a prefixes from a server.
-    #                 PARAMETERS: [prefix name]
-    #                 EXAMPLE: `prefix remove !@`
-    #                 RESULT: Removes prefixes !@"""
-    #     current_prefix = self.bot.get_prefixes(ctx.message)
-    #
-    #     try:
-    #         current_prefix.remove(prefix)
-    #     except ValueError:
-    #         return await ctx.send("This prefix has not been registered!")
-    #     try:
-    #         await self.bot.set_guild_prefixes(ctx.message, current_prefix)
-    #     except Exception as e:
-    #         await ctx.send(f"{e}\N{THUMBS DOWN SIGN}")
-    #     else:
-    #         await ctx.send("\N{OK HAND SIGN}")
-    #
-    # @prefix.command(name="clear")
-    # async def clear_prefix(self, ctx):
-    #     """Clears prefixes for a server.
-    #                 PARAMETERS: None
-    #                 EXAMPLE: `prefix clear`
-    #                 RESULT: Clears prefixes. Only prefix left is <@496558571605983262>. Use this to add more"""
-    #     await self.bot.set_guild_prefixes(ctx.message, [])
-    #
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_messages=True)
+    async def cleanup(self, ctx, num_messages: int, *users):
+        try:
+            to_clean = [(await commands.MemberConverter().convert(ctx, user)) for user in users]
+        except commands.BadArgument:
+            try:
+                to_clean = [(await commands.RoleConverter().convert(ctx, user)) for user in users]
+            except commands.BadArgument:
+                print(users)
+                if users[0] in ['bots', 'humans']:
+                    to_clean = []
+                    members = ctx.channel.members
+                    if users[0] == 'bots':
+                        for m in members:
+                            if m.bot:
+                                to_clean.append(m)
+                    if users[0] == 'humans':
+                        for m in members:
+                            if not m.bot:
+                                to_clean.append(m)
+                else:
+                    raise commands.BadArgument("That was not a correct mention(s), role(s) or `bots` or `humans`")
+
+        if num_messages > 100:
+            num_messages = 100
+
+        def check(m):
+            return m.author in to_clean
+        try:
+            deleted = await ctx.channel.purge(limit=num_messages, check=check)
+        except discord.Forbidden:
+            raise discord.Forbidden("I don't have the required `manage_messages` permission to run this command!")
+
+        send = await ctx.send(f"Deleted {len(deleted)} messages from `{[n.name for n in to_clean]}`.")
+        await asyncio.sleep(5)
+        await send.delete()
+
+    @commands.group(name='ignore', invoke_without_command=True)
+    @checks.is_mod()
+    async def _ignore(self, ctx, *user_or_channel):
+        try:
+            user_or_channel = [(await commands.MemberConverter().convert(ctx, u_c)) for u_c in user_or_channel]
+        except commands.BadArgument:
+            try:
+                user_or_channel = [(await commands.TextChannelConverter().convert(ctx, u_c)) for u_c in user_or_channel]
+            except commands.BadArgument:
+                raise commands.BadArgument(f"Channel(s) or user(s) {user_or_channel} not found!")
+
+        # user_or_channel = await MemberChannel().convert(ctx, user_or_channel)
+        current_ignored = [(self.bot.get_ignored(ctx.guild.id, cid=u_c.id)) for u_c in user_or_channel][0]
+        if len(current_ignored) != 0:
+            raise commands.BadArgument("Channel or member is already being ignored!")
+
+        to_send = []
+        for indiv in user_or_channel:
+            b = {'guildid': ctx.guild.id, 'id': indiv.id}
+            self.bot.loaded['ignored'].append(b)
+
+        all_ignored = self.bot.get_ignored(ctx.guild.id, cid='all')
+        for indiv in all_ignored:
+            try:
+                user = await commands.MemberConverter().convert(ctx, str(indiv))
+                to_send.append(f"{user.display_name}#{user.discriminator}")
+            except commands.BadArgument:
+                channel = await commands.TextChannelConverter().convert(ctx, str(indiv))
+                to_send.append(f"#{channel.name}")
+
+        await ctx.send(f"The list of ignored channels or members is now: `{to_send}`")
+        await self.bot.save_json()
+
+    @_ignore.command()
+    @checks.is_mod()
+    async def list(self, ctx):
+        to_send = []
+        all_ignored = self.bot.get_ignored(ctx.guild.id, cid='all')
+        for indiv in all_ignored:
+            try:
+                user = await commands.MemberConverter().convert(ctx, str(indiv))
+                to_send.append(f"{user.display_name}#{user.discriminator}")
+            except commands.BadArgument:
+                channel = await commands.TextChannelConverter().convert(ctx, str(indiv))
+                to_send.append(f"#{channel.name}")
+        e = discord.Embed(colour=discord.Colour.blue())
+        e.description = '\n'.join(f'{index}: {to_send[index]}' for index in range(0, len(to_send)))
+        return await ctx.send(embed=e)
+
+    @commands.group(name='unignore', invoke_without_command=True)
+    @checks.is_mod()
+    async def _unignore(self, ctx, *user_or_channel):
+        try:
+            user_or_channel = [(await commands.MemberConverter().convert(ctx, u_c)) for u_c in user_or_channel]
+        except commands.BadArgument:
+            try:
+                user_or_channel = [(await commands.TextChannelConverter().convert(ctx, u_c)) for u_c in user_or_channel]
+            except commands.BadArgument:
+                raise commands.BadArgument(f"Channel(s) or user(s) {user_or_channel} not found!")
+
+        current_ignored = [(self.bot.get_ignored(ctx.guild.id, cid=u_c.id)) for u_c in user_or_channel]
+        if len(current_ignored) == 2:
+            raise commands.BadArgument("Channel or member is not currently being ignored!")
+
+        to_send = []
+
+        for indiv in user_or_channel:
+            b = {'guildid': ctx.guild.id, 'id': indiv.id}
+            self.bot.loaded['ignored'].remove(b)
+
+        all_ignored = self.bot.get_ignored(ctx.guild.id, cid='all')
+        for indiv in all_ignored:
+            try:
+                user = await commands.MemberConverter().convert(ctx, str(indiv))
+                to_send.append(f"{user.display_name}#{user.discriminator}")
+            except commands.BadArgument:
+                channel = await commands.TextChannelConverter().convert(ctx, str(indiv))
+                to_send.append(f"#{channel.name}")
+
+        await ctx.send(f"The list of ignored channels or members is now: `{to_send}`")
+        await self.bot.save_json()
+
+    @_unignore.command(name='list')
+    @checks.is_mod()
+    async def _list(self, ctx):
+        return await self.list(ctx)
+
+    # @commands.group(name='admin')
+    # @commands.guild_only()
+    # @checks.is_admin()
+    # async def _admin(self):
+    #     pass
+    # @_admin.command()
+    # @commands.guild_only()
+    # @checks.is_admin()
+    # async def add(self, ctx, *user_or_role):
+    #     pass
+
+    @commands.command(name='help')
+    async def _help(self, ctx, *, command: str = None):
+        """Shows help about a command or cog
+
+        PARAMETERS: optional: command or cog name
+
+        EXAMPLE: `help about`
+
+        RESULT: Returns a help message for `about` command"""
+
+        try:
+            # if no command supplied to get help for run default help paginator
+            if command is None:
+                p = await HelpPaginator.from_bot(ctx)
+            else:
+                # get command from bot
+                entity = self.bot.get_cog(command) or self.bot.get_command(command)
+                # if nothing found return
+                if entity is None:
+                    clean = command.replace('@', '@\u200b')
+                    return await ctx.send(f'Command or category "{clean}" not found.')
+
+                # if its a command do help paginator for commands
+                elif isinstance(entity, commands.Command):
+                    p = await HelpPaginator.from_command(ctx, entity)
+
+                # if its a cog do help paginator for cog
+                else:
+                    p = await HelpPaginator.from_cog(ctx, entity)
+
+            # start paginating
+            await p.paginate()
+        except Exception as e:
+            await ctx.send(e)
 
 def setup(bot):
     bot.add_cog(Mod(bot))
