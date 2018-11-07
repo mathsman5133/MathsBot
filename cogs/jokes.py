@@ -193,8 +193,9 @@ class Jokes:
                 msg = await self.bot.wait_for('message', check=check, timeout=60.0)
                 # wait for a reply + add to counter (attempts) if reply
                 counter += 1
+
                 # if correct
-                if msg.content == riddle[0][1]:
+                if msg.content.lower() == riddle[0][1]:
                     embed = discord.Embed(colour=0x00ff00)
                     embed.set_author(name="Correct!", icon_url=ctx.author.avatar_url)
                     embed.title = riddle[0][0]
