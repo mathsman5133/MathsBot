@@ -205,8 +205,7 @@ class MathsBot(commands.Bot):
         if message.author.bot:
             # ignore command if author is a bot
             return
-        if message.author.id != 230214242618441728:
-            return
+
         ignored = self.get_ignored(message.guild.id, cid='all')
         ignored.extend(self.get_global_ignored('all'))
         if message.guild.id in ignored:
