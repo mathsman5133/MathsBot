@@ -3,7 +3,7 @@ import aiosqlite
 import random
 import discord
 import asyncio
-from cogs.GamesCommands import Leaderboard
+from cogs.games import Leaderboard
 import os
 
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
