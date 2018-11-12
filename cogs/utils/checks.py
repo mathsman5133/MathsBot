@@ -57,7 +57,11 @@ def check_roles(ctx, modperms=False, adminperms=False):
 
 
 def is_mod():
-    def predict(ctx):
+    async def predict(ctx):
+        owner = await ctx.bot.is_owner(ctx.author)
+        if owner:
+            return True
+
         check_roles(ctx, modperms=True)
 
     checkpredict = commands.check(predict)
@@ -71,7 +75,11 @@ def is_mod():
 
 
 def is_admin():
-    def predict(ctx):
+    async def predict(ctx):
+        owner = await ctx.bot.is_owner(ctx.author)
+        if owner:
+            return True
+
         check_roles(ctx, adminperms=True)
 
     checkpredict = commands.check(predict)
