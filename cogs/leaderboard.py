@@ -24,7 +24,7 @@ class Leaderboard:
             return await ctx.send(f"Please choose a game type. These include: {games}\n...more coming soon!")
         leaderboard = Leaderboard(ctx)
         # get leaderboard for a game
-        return await leaderboard.get_leaderboard_guild(game)
+        return await leaderboard.get_leaderboard_guild(game, ctx)
 
     @leaderboard.command()
     async def all(self, ctx, game: str = None):
@@ -38,7 +38,7 @@ class Leaderboard:
             return await ctx.send(f"Please choose a game type. These include: {games}\n...more coming soon!")
         leaderboard = Leaderboard(ctx)
         # get and send leaderboard for a game
-        return await leaderboard.get_leaderboard_all(game)
+        return await leaderboard.get_leaderboard_all(game, ctx)
 
     @commands.command()
     async def gamestats(self, ctx, user: discord.Member = None):
@@ -50,7 +50,7 @@ class Leaderboard:
             user = ctx.author
         # same thing for a user different command tho coz need to work out how to use group commands in my help
         leaderboard = Leaderboard(ctx)
-        send = await leaderboard.get_leaderboard_user(user)
+        send = await leaderboard.get_leaderboard_user(user, ctx)
 
     async def get_leaderboard_all(self, gamecom, ctx):
         # emojis we're gonna use for leaderboard. This one is for
