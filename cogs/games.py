@@ -16,6 +16,11 @@ class Games:
 
     @commands.command()
     async def clashtrivia(self, ctx, *people_to_play: discord.Member):
+        """Play a game of clash of clans trivia with friends and/or yourself
+
+        PARAMETERS: optional: [ping friends to play] - play a multiplayer game with friends
+        EXAMPLE: `clashtrivia` or `clashtrivia @friend1 @friend2 @friend3`
+        RESULT: Initiates a COC trivia game with yourself or with friends 1, 2, 3 and yourself"""
         info = {ctx.author.id: {"user": ctx.author,
                                 "attempts": 0,
                                 "correct": 0,
@@ -166,15 +171,25 @@ class Games:
 
     @commands.group(name="trivia", invoke_without_command=True)
     async def _trivia(self, ctx, *, difficulty_or_topic: str=None):
-        """Start a game of trivia with yourself. Select the difficulty or topic. There is 10 questions and I will timeout after 15 seconds
+        """
+        Group: Play a trivia game with friends and/or yourself, or find available catagories.
+        Invoke without a command to play solo
 
-            PARAMETERS: optional: [difficulty or topic] - easy, medium, hard, or any topic found with `trivia categories`
-            EXAMPLE: `trivia easy` or `trivia Politics`
-            RESULT: Initiates an easy game of trivia or one with the topic Politics"""
+        PARAMETERS: optional: [difficulty or topic]
+        EXAMPLE: `trivia easy` or `trivia Politics`
+        RESULT: Initiates an easy game of trivia or one with the topic Politics
+        """
         await self.solo(ctx, difficulty_or_topic, 10)
 
     @_trivia.command(aliases=['category'])
     async def categories(self, ctx, *, difficulty_or_category):
+        """
+        Find available categories for a trivia game
+
+        PARAMETERS: None
+        EXAMPLE: `trivia categories`
+        RESULT: Returns available trivia categories to select from
+        """
         send = await self.trivia_category(ctx, difficulty_or_category, 10)
         if send:
             e = discord.Embed(colour=0xff0000)
@@ -185,7 +200,14 @@ class Games:
 
     @_trivia.command()
     async def solo(self, ctx, *, difficulty_or_topic):
+        """
+        Start a game of trivia with yourself. Select the difficulty or topic.
+        There is 10 questions and I will timeout after 15 seconds
 
+        PARAMETERS: optional: [difficulty or topic] - easy, medium, hard, or any topic found with `trivia categories`
+        EXAMPLE: `trivia solo easy` or `trivia solo Politics`
+        RESULT: Initiates an easy game of trivia or one with the topic Politics
+        """
         dump = await self.trivia_category(ctx, difficulty_or_topic, 10)
         # if I sent a category list:
         if dump is False:
@@ -286,11 +308,13 @@ class Games:
 
     @_trivia.command()
     async def game(self, ctx, difficulty_topic, *people_to_play: discord.Member):
-        """Start a trivia game with a friend! Specify the difficulty or topic. There are 5 questions each, and I will timeout if you do not respond within 15 seconds.
+        """Start a trivia game with multiple friend(s)! Specify the difficulty or topic.
+        There are 10 questions each; your turn will be skipped if you do not respond within 15 seconds.
 
-            PARAMETERS: [user] - @mention/nick#discrim/id, optional:[difficulty or topic] - easy, medium, hard, or a topic in `trivia categories`
-            EXAMPLE: `triviagame @mathsman` or `triviagame @mathsman easy`
-            RESULT: Starts a trivia game with @mathsman, or an easy trivia game with @mathsman"""
+        PARAMETERS: [difficulty or topic] [@mention friends]. If difficulty or topic is more than 1 word, you MUST surround it in " ".`
+        EXAMPLE: `trivia game all @friend1` or `trivia game "General Knowledge" @friend1 @friend2 @friend3`
+        RESULT: Starts a trivia game with friend 1, or a trivia game with friends 1, 2 and 3 and category General Knowledge
+        """
 
         dump = await self.trivia_category(ctx, difficulty_topic, (len(people_to_play) + 1)*10)
         if dump is False:
@@ -427,10 +451,13 @@ class Games:
 
     @commands.command()
     async def reacttest(self, ctx):
-        """Test you reaction speed! Hit the emoji when the embed turns green
-            PARAMETERS: None
-            EXAMPLE: `reacttest`
-            RESULT: Wait for the embed to turn green and whack the emoji"""
+        """
+        Test you reaction speed! Hit the emoji when the embed turns green
+
+        PARAMETERS: None
+        EXAMPLE: `reacttest`
+        RESULT: Wait for the embed to turn green and whack the emoji
+        """
 
         # check if reaction is same reaction and reacter is author
 
@@ -508,11 +535,13 @@ class Games:
 
     @commands.command(name='guess')
     async def guess_number(self, ctx, limit=None):
-        """I choose a number and you have to guess! Default limit is 1000. I will tell you if you are too small or too big.
+        """
+        I choose a number and you have to guess! Default limit is 1000. I will tell you if you are too small or too big.
 
-            PARAMETERS: optional: [limit] - the limit of the range I choose my number
-            EXAMPLE: `guess` or `guess 500`
-            RESULT: Starts a guessing game with a number between 1000 or 500"""
+        PARAMETERS: optional: [limit] - the limit of the range I choose my number
+        EXAMPLE: `guess` or `guess 500`
+        RESULT: Starts a guessing game with a number between 1000 or 500
+        """
         # if limit is not specified set to default 1000. I should just change it to that next to limit hey
 
         if not limit:
