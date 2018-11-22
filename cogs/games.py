@@ -134,7 +134,7 @@ class Games:
                 return await c.fetchall()
 
         # if no topic then get 10 random ones
-        if not difficulty_topic:
+        if difficulty_topic == 'all':
             async with aiosqlite.connect(db_path) as db:
                 c = await db.execute("SELECT * FROM trivia WHERE used = 0 ORDER BY RANDOM() LIMIT :lim",
                                      {'lim': limit})
@@ -179,10 +179,11 @@ class Games:
         EXAMPLE: `trivia easy` or `trivia Politics`
         RESULT: Initiates an easy game of trivia or one with the topic Politics
         """
-        await self.solo(ctx, difficulty_or_topic, 10)
+        cmd = self.bot.get_command("trivia solo")
+        await cmd.invoke(ctx=ctx)
 
     @_trivia.command(aliases=['category'])
-    async def categories(self, ctx, *, difficulty_or_category):
+    async def categories(self, ctx):
         """
         Find available categories for a trivia game
 
@@ -190,7 +191,7 @@ class Games:
         EXAMPLE: `trivia categories`
         RESULT: Returns available trivia categories to select from
         """
-        send = await self.trivia_category(ctx, difficulty_or_category, 10)
+        send = await self.trivia_category(ctx, 'categories', 10)
         if send:
             e = discord.Embed(colour=0xff0000)
             e.set_author(name="Category not found", icon_url=ctx.author.avatar_url)
@@ -199,7 +200,7 @@ class Games:
             await ctx.send(embed=e)
 
     @_trivia.command()
-    async def solo(self, ctx, *, difficulty_or_topic):
+    async def solo(self, ctx, *, difficulty_or_topic: str = None):
         """
         Start a game of trivia with yourself. Select the difficulty or topic.
         There is 10 questions and I will timeout after 15 seconds
@@ -208,6 +209,8 @@ class Games:
         EXAMPLE: `trivia solo easy` or `trivia solo Politics`
         RESULT: Initiates an easy game of trivia or one with the topic Politics
         """
+        if not difficulty_or_topic:
+            difficulty_or_topic = 'all'
         dump = await self.trivia_category(ctx, difficulty_or_topic, 10)
         # if I sent a category list:
         if dump is False:
@@ -258,15 +261,14 @@ class Games:
                                          {'id': trivia[0]})
                         await db.commit()
 
-                    e = discord.Embed()
                     if msg.content.lower() == trivia[4][0].lower():
                         correct += 1
-                        e.colour = discord.Colour.green()
+                        embed.colour = discord.Colour.green()
                         embed.set_author(name="Correct!", icon_url=ctx.message.author.avatar_url)
 
                     else:
-                        e.colour = discord.Colour.red()
-                        e.set_author(name="Incorrect!", icon_url=ctx.message.author.avatar_url)
+                        embed.colour = discord.Colour.red()
+                        embed.set_author(name="Incorrect!", icon_url=ctx.message.author.avatar_url)
 
                     embed.title = trivia[3]
                     embed.description = trivia[5]
@@ -280,7 +282,7 @@ class Games:
                 except asyncio.TimeoutError:
                     e = discord.Embed(colour=0xff0000)
                     e.set_author(name="You took too long! Game over", icon_url=ctx.author.avatar_url)
-                    await send.edit(embed=embed)
+                    await send.edit(embed=e)
                     return
 
         lb = Leaderboard(self.bot)
@@ -316,7 +318,12 @@ class Games:
         RESULT: Starts a trivia game with friend 1, or a trivia game with friends 1, 2 and 3 and category General Knowledge
         """
 
-        dump = await self.trivia_category(ctx, difficulty_topic, (len(people_to_play) + 1)*10)
+        member = await commands.MemberConverter().convert(ctx, difficulty_topic)
+
+        if member:
+            difficulty_topic = 'all'
+
+        dump = await self.trivia_category(ctx, difficulty_topic, (len(people_to_play) + 1)*2)
         if dump is False:
             return
         # if category not found
@@ -338,6 +345,11 @@ class Games:
                              "attempts": 0,
                              "correct": 0,
                              "turn": 0}
+        if member:
+            info[member.id] = {"user": member,
+                               "attempts": 0,
+                               "correct": 0,
+                               "turn": 0}
 
         current_turn_id = 0
 
@@ -378,7 +390,6 @@ class Games:
                 try:
                     msg = await self.bot.wait_for('message', check=check, timeout=15.0)
 
-                    e = discord.Embed()
                     embed.title = trivia[3]
                     embed.description = trivia[5]
                     embed.add_field(name="Correct Answer:", value=trivia[4], inline=False)
@@ -391,17 +402,18 @@ class Games:
                     if msg.content.lower() == trivia[4].lower():
                         info[user['user'].id]['correct'] += 1
 
-                        e.colour = discord.Colour.green()
-                        e.set_author(name="Correct!", icon_url=user['user'].avatar_url)
+                        embed.colour = discord.Colour.green()
+                        embed.set_author(name="Correct!", icon_url=user['user'].avatar_url)
 
                     else:
-                        e.colour = discord.Colour.red()
-                        e.set_author(name="Incorrect!", icon_url=user['user'].avatar_url)
+                        embed.colour = discord.Colour.red()
+                        embed.set_author(name="Incorrect!", icon_url=user['user'].avatar_url)
 
                     uuser = info[user['user'].id]
 
-                    e.description = f"You are currently {uuser['correct']}/{uuser['attempts']}"
-                    await ctx.send(embed=e)
+                    embed.add_field(name='\u200b',
+                                    value=f"You are currently {uuser['correct']}/{uuser['attempts']}")
+                    await ctx.send(embed=embed)
                     break
 
                 except asyncio.TimeoutError:
@@ -415,9 +427,11 @@ class Games:
             to_beat_score = 0
             to_beat_user = ''
             for entry in info:
-                if info[entry]['correct'] > to_beat_score:
+                print(info[entry]['correct'])
+                if info[entry]['correct'] >= to_beat_score:
                     to_beat_score = info[entry]['correct']
                     to_beat_user = info[entry]['user']
+                    print(to_beat_user)
             return to_beat_user
 
         winner = winner()
