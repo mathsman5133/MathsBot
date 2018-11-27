@@ -1,13 +1,32 @@
 from discord.ext import commands
 import asyncio
 import discord
-import aiosqlite
 import random
 import time
-import os
 from cogs.leaderboard import Leaderboard
+from cogs.utils import db
 
-db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
+
+class ClashTrivia(db.Table, table_name='clash_trivia'):
+    id = db.PrimaryKeyColumn()
+
+    category = db.Column(db.String)
+    question = db.Column(db.String)
+    answers = db.Column(db.String)
+    correct = db.Column(db.String)
+    explanation = db.Column(db.String)
+    icon_url = db.Column(db.String)
+
+
+class TriviaQuestions(db.Table, table_name='trivia'):
+    id = db.PrimaryKeyColumn()
+
+    category = db.Column(db.String)
+    difficulty = db.Column(db.String)
+    question = db.Column(db.String)
+    answers = db.Column(db.String)
+    correct = db.Column(db.String)
+    used = db.Column(db.Integer, default=0)
 
 
 class Games:
@@ -41,10 +60,14 @@ class Games:
             else:
                 return False
 
-        async with aiosqlite.connect(db_path) as db:
-            c = await db.execute("SELECT * FROM clash_trivia ORDER BY RANDOM() LIMIT :lim",
-                                 {'lim': len(info) * 5})
-            questions = await c.fetchall()
+        query = """SELECT * FROM clash_trivia ORDER BY RANDOM() LIMIT $1
+                """
+        questions = await self.bot.pool.fetch(query, len(info) * 5)
+
+        # async with aiosqlite.connect(db_path) as db:
+        #     c = await db.execute("SELECT * FROM clash_trivia ORDER BY RANDOM() LIMIT :lim",
+        #                          {'lim': len(info) * 5})
+        #     questions = await c.fetchall()
 
         def turn():
             for entry in info:
@@ -125,49 +148,68 @@ class Games:
 
         # if msg content is easy, med, hard then look for that:
         if difficulty_topic in ['easy', 'medium', 'hard']:
-            async with aiosqlite.connect(db_path) as db:
-                c = await db.execute("SELECT * FROM trivia WHERE used = 0 AND difficulty = :dif"
-                                     " ORDER BY RANDOM() LIMIT :lim",
-                                     {'dif': difficulty_topic,
-                                      'lim': limit})
-                # return 10 questions with difficulty specified
-                return await c.fetchall()
+            query = """SELECT * FROM trivia WHERE used = $1 AND difficulty = $2"
+                       ORDER BY RANDOM() LIMIT $3
+                       """
+            return await self.bot.pool.fetch(query, 0, difficulty_topic, limit)
+
+            # async with aiosqlite.connect(db_path) as db:
+            #     c = await db.execute("SELECT * FROM trivia WHERE used = 0 AND difficulty = :dif"
+            #                          " ORDER BY RANDOM() LIMIT :lim",
+            #                          {'dif': difficulty_topic,
+            #                           'lim': limit})
+            #     # return 10 questions with difficulty specified
+            #     return await c.fetchall()
 
         # if no topic then get 10 random ones
         if difficulty_topic == 'all':
-            async with aiosqlite.connect(db_path) as db:
-                c = await db.execute("SELECT * FROM trivia WHERE used = 0 ORDER BY RANDOM() LIMIT :lim",
-                                     {'lim': limit})
-                return await c.fetchall()
+            query = """SELECT * FROM trivia WHERE used = $1 ORDER BY RANDOM() LIMIT $2
+                    """
+            return await self.bot.pool.fetch(query, 0, limit)
+            # async with aiosqlite.connect(db_path) as db:
+            #     c = await db.execute("SELECT * FROM trivia WHERE used = 0 ORDER BY RANDOM() LIMIT :lim",
+            #                          {'lim': limit})
+            #     return await c.fetchall()
 
         # if it is 'categories' then they want to know what categories available
         else:
             if difficulty_topic == 'categories':
-                async with aiosqlite.connect(db_path) as db:
-                    # get all categories for all questions
-                    c = await db.execute("SELECT category FROM trivia")
-                    # unique ones as a list
-                    dump = list(set(await c.fetchall()))
-                    # send them
-                    e = discord.Embed(colour=0x00ff00)
-                    e.set_author(name="Categories for trivia games", icon_url=ctx.author.avatar_url)
-                    desc = ''
-                    for cat in dump:
-                        desc += cat[0] + '\n'
-                    e.add_field(name='\u200b', value=desc)
-                    e.set_footer(text=f"Type `{ctx.prefix}trivia [category]` to get a trivia game of that category!",
-                                 icon_url=self.bot.user.avatar_url)
-                    await ctx.send(embed=e)
-                    # return False
-                    return False
+                # async with aiosqlite.connect(db_path) as db:
+                #
+                #     c = await db.execute("SELECT category FROM trivia")
+                #     # unique ones as a list
+                #     dump = list(set(await c.fetchall()))
+                #     # send them
+                #
+                # get all categories for all questions
+                query = """SELECT category FROM trivia
+                        """
+                dump = list(set(await self.bot.pool.fetch(query)))
+                desc = '{}\n'.join(n[0] for n in dump)
+
+                e = discord.Embed(colour=0x00ff00)
+                e.set_author(name="Categories for trivia games", icon_url=ctx.author.avatar_url)
+                e.add_field(name='\u200b', value=desc)
+                e.set_footer(text=f"Type `{ctx.prefix}trivia [category]` to get a trivia game of that category!",
+                             icon_url=self.bot.user.avatar_url)
+
+                await ctx.send(embed=e)
+                # return False
+                return False
             # otherwise get 10 questions with that category
-            async with aiosqlite.connect(db_path) as db:
-                c = await db.execute("SELECT * FROM trivia WHERE used = 0 AND category = :cat"
-                                     " ORDER BY RANDOM() LIMIT :lim",
-                                     {'cat': difficulty_topic,
-                                      'lim': limit})
-                # return results (could be none)
-                return await c.fetchall()
+            query = """
+                    SELECT * FROM trivia WHERE used = $1
+                    AND category = $2 ORDER BY RANDOM() LIMIT $3
+                    """
+            return await self.bot.pool.fetch(query, 0, difficulty_topic, limit)
+
+            # async with aiosqlite.connect(db_path) as db:
+            #     c = await db.execute("SELECT * FROM trivia WHERE used = 0 AND category = :cat"
+            #                          " ORDER BY RANDOM() LIMIT :lim",
+            #                          {'cat': difficulty_topic,
+            #                           'lim': limit})
+            #     # return results (could be none)
+            #     return await c.fetchall()
 
     @commands.group(name="trivia", invoke_without_command=True)
     async def _trivia(self, ctx, *, difficulty_or_topic: str=None):
@@ -222,8 +264,8 @@ class Games:
             embed.set_author(name="Category not found", icon_url=ctx.author.avatar_url)
             embed.description = f'Find all categories with {ctx.prefix}trivia categories. ' \
                                 'Difficulties are: easy, medium, hard.'
-            await ctx.send(embed=embed)
-            return
+            return await ctx.send(embed=embed)
+
 
         correct = 0
         attempts = 0
@@ -256,10 +298,14 @@ class Games:
                 try:
                     msg = await self.bot.wait_for('message', check=check, timeout=15.0)
                     attempts += 1
-                    async with aiosqlite.connect(db_path) as db:
-                        await db.execute("UPDATE trivia SET used = 1 WHERE id = :id",
-                                         {'id': trivia[0]})
-                        await db.commit()
+
+                    query = "UPDATE trivia SET used = 1 WHERE id = $1"
+                    await self.bot.pool.execute(query, trivia[0])
+
+                    # async with aiosqlite.connect(db_path) as db:
+                    #     await db.execute("UPDATE trivia SET used = 1 WHERE id = :id",
+                    #                      {'id': trivia[0]})
+                    #     await db.commit()
 
                     if msg.content.lower() == trivia[4][0].lower():
                         correct += 1
@@ -394,10 +440,13 @@ class Games:
                     embed.description = trivia[5]
                     embed.add_field(name="Correct Answer:", value=trivia[4], inline=False)
 
-                    async with aiosqlite.connect(db_path) as db:
-                        await db.execute("UPDATE trivia SET used = 1 WHERE id = :id",
-                                         {'id': trivia[0]})
-                        await db.commit()
+                    query = "UPDATE trivia SET used = 1 WHERE id = $1"
+                    await self.bot.pool.execute(query, trivia[0])
+
+                    # async with aiosqlite.connect(db_path) as db:
+                    #     await db.execute("UPDATE trivia SET used = 1 WHERE id = :id",
+                    #                      {'id': trivia[0]})
+                    #     await db.commit()
 
                     if msg.content.lower() == trivia[4].lower():
                         info[user['user'].id]['correct'] += 1
@@ -427,11 +476,9 @@ class Games:
             to_beat_score = 0
             to_beat_user = ''
             for entry in info:
-                print(info[entry]['correct'])
                 if info[entry]['correct'] >= to_beat_score:
                     to_beat_score = info[entry]['correct']
                     to_beat_user = info[entry]['user']
-                    print(to_beat_user)
             return to_beat_user
 
         winner = winner()
