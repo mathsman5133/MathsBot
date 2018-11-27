@@ -8,11 +8,20 @@ from contextlib import redirect_stdout
 import textwrap
 import traceback
 import datetime
-import math
-import json
-import urllib.request
+from cogs.utils import db
 
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
+
+
+class Commands(db.Table):
+    id = db.PrimaryKeyColumn()
+
+    guild_id = db.Column(db.Integer(big=True), index=True)
+    channel_id = db.Column(db.Integer(big=True))
+    author_id = db.Column(db.Integer(big=True), index=True)
+    used = db.Column(db.Datetime)
+    prefix = db.Column(db.String)
+    command = db.Column(db.String, index=True)
 
 
 class GuildCommandStats:
@@ -292,15 +301,32 @@ class Admin:
         else:
             await ctx.send('\N{OK HAND SIGN}')
 
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     @commands.is_owner()
     async def reload(self, ctx, *, module):
         module = module.lower()
         if not module.startswith("cogs"):
             module = f"cogs.{module}"
 
-        self.bot.unload_extension(module)
-        self.bot.load_extension(module)
+        try:
+            self.bot.unload_extension(module)
+            self.bot.load_extension(module)
+
+        except Exception as e:
+            await ctx.send(f'```py\n{traceback.format_exc()}\n```')
+        else:
+            await ctx.send('\N{OK HAND SIGN}')
+
+    @reload.command()
+    @commands.is_owner()
+    async def all(self, ctx):
+        for m in self.bot.extentions:
+            try:
+                self.bot.unload_extension(m)
+                self.bot.load_extension(m)
+            except Exception as e:
+                await ctx.send(f'```py\n{traceback.format_exc()}\n```')
+
         await ctx.send("\N{THUMBS UP SIGN}")
 
     @commands.command()
@@ -424,6 +450,21 @@ class Admin:
         self.bot.loaded['global_ignored'].remove(b)
         await ctx.send("\N{THUMBS UP SIGN}")
         await self.bot.save_json()
+
+    @commands.command()
+    @commands.is_owner()
+    async def migrate(self, ctx):
+        async with aiosqlite.connect(db_path) as db:
+            c = await db.execute("SELECT * FROM trivia")
+            dump = await c.fetchall()
+
+        query = """INSERT INTO trivia (category, difficulty, question, answers, correct, used)
+                   VALUES ($1, $2, $3, $4, $5, $6)
+                """
+
+        for n in dump:
+            await self.bot.pool.execute(query, n[1], n[2], n[3], n[4], n[5], n[6])
+
 
 def setup(bot):
     bot.add_cog(Admin(bot))
