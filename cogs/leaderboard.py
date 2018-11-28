@@ -14,11 +14,12 @@ class LeaderboardDB(db.Table, table_name='leaderboard'):
     user_id = db.Column(db.Integer(big=True))
     guild_id = db.Column(db.Integer(big=True))
     game = db.Column(db.String)
-    record = db.Column(db.String)
     attempts = db.Column(db.String)
     wrong = db.Column(db.String)
     correct = db.Column(db.String)
     games = db.Column(db.String)
+    record = db.Column(db.Numeric)
+
 
 
 class Leaderboard:
@@ -75,8 +76,8 @@ class Leaderboard:
         embed = discord.Embed(colour=discord.Colour.dark_gold())
 
         query = """
-                SELECT userid, record FROM leaderboard 
-                WHERE game = $1 ORDER BY record ASC LIMIT 5
+                SELECT user_id, record FROM leaderboard 
+                WHERE game = $1 ORDER BY record ASC LIMIT 5;
                 """
         records = await self.bot.pool.fetch(query, gamecom)
 
@@ -91,8 +92,8 @@ class Leaderboard:
         embed.add_field(name="Top Records", value=value, inline=True)
 
         query = """
-                SELECT userid, games FROM leaderboard 
-                WHERE game = $1 ORDER BY games DESC LIMIT 5
+                SELECT user_id, games FROM leaderboard 
+                WHERE game = $1 ORDER BY games DESC LIMIT 5;
                 """
         games = await self.bot.pool.fetch(query, gamecom)
 
@@ -107,8 +108,8 @@ class Leaderboard:
         embed.add_field(name="Top games played", value=value, inline=True)
 
         query = """
-                SELECT userid, attempts FROM leaderboard 
-                WHERE game = $1 ORDER BY attempts DESC LIMIT 5
+                SELECT user_id, attempts FROM leaderboard 
+                WHERE game = $1 ORDER BY attempts DESC LIMIT 5;
                 """
         attempts = await self.bot.pool.fetch(query, gamecom)
 
@@ -126,8 +127,8 @@ class Leaderboard:
         embed.add_field(name="Total attempts", value=value, inline=True)
 
         query = """
-                SELECT userid, correct FROM leaderboard 
-                WHERE game = $1 ORDER BY correct DESC LIMIT 5
+                SELECT user_id, correct FROM leaderboard 
+                WHERE game = $1 ORDER BY correct DESC LIMIT 5;
                 """
         correct = await self.bot.pool.fetch(query, gamecom)
 
@@ -142,8 +143,8 @@ class Leaderboard:
         embed.add_field(name="Total correct answers", value=value, inline=True)
 
         query = """
-                SELECT userid, wrong FROM leaderboard 
-                WHERE game = $1 ORDER BY wrong DESC LIMIT 5
+                SELECT user_id, wrong FROM leaderboard 
+                WHERE game = $1 ORDER BY wrong DESC LIMIT 5;
                 """
         wrong = await self.bot.pool.fetch(query, gamecom)
 
@@ -172,8 +173,8 @@ class Leaderboard:
         embed = discord.Embed(colour=discord.Colour.dark_gold())
 
         query = """
-                SELECT userid, record FROM leaderboard 
-                WHERE game = $1 AND guildid = $2 ORDER BY record ASC LIMIT 5
+                SELECT user_id, record FROM leaderboard 
+                WHERE game = $1 AND guild_id = $2 ORDER BY record ASC LIMIT 5;
                 """
         records = await self.bot.pool.fetch(query, gamecom, ctx.guild.id)
 
@@ -188,8 +189,8 @@ class Leaderboard:
         embed.add_field(name="Top Records", value=value, inline=True)
 
         query = """
-                SELECT userid, games FROM leaderboard 
-                WHERE game = $1 AND guildid = $2 ORDER BY games DESC LIMIT 5
+                SELECT user_id, games FROM leaderboard 
+                WHERE game = $1 AND guild_id = $2 ORDER BY games DESC LIMIT 5;
                 """
         games = await self.bot.pool.fetch(query, gamecom, ctx.guild.id)
 
@@ -204,8 +205,8 @@ class Leaderboard:
         embed.add_field(name="Top games played", value=value, inline=True)
 
         query = """
-                SELECT userid, attempts FROM leaderboard 
-                WHERE game = $1 AND guildid = $2 ORDER BY attempts DESC LIMIT 5
+                SELECT user_id, attempts FROM leaderboard 
+                WHERE game = $1 AND guild_id = $2 ORDER BY attempts DESC LIMIT 5;
                 """
         attempts = await self.bot.pool.fetch(query, gamecom, ctx.guild.id)
 
@@ -221,8 +222,8 @@ class Leaderboard:
         embed.add_field(name="Total attempts", value=value, inline=True)
 
         query = """
-                SELECT userid, correct FROM leaderboard 
-                WHERE game = $1 AND guildid = $2 ORDER BY correct DESC LIMIT 5
+                SELECT user_id, correct FROM leaderboard 
+                WHERE game = $1 AND guild_id = $2 ORDER BY correct DESC LIMIT 5;
                 """
         correct = await self.bot.pool.fetch(query, gamecom, ctx.guild.id)
 
@@ -238,8 +239,8 @@ class Leaderboard:
         embed.add_field(name="Total correct answers", value=value, inline=True)
 
         query = """
-                SELECT userid, wrong FROM leaderboard 
-                WHERE game = $1 AND guildid = $2 ORDER BY wrong DESC LIMIT 5
+                SELECT user_id, wrong FROM leaderboard 
+                WHERE game = $1 AND guild_id = $2 ORDER BY wrong DESC LIMIT 5;
                 """
         wrong = await self.bot.pool.fetch(query, gamecom, ctx.guild.id)
 
@@ -268,7 +269,7 @@ class Leaderboard:
 
         query = """
                 SELECT game, record FROM leaderboard 
-                WHERE userid = $1 GROUP BY game ORDER BY record ASC LIMIT 5
+                WHERE user_id = $1 GROUP BY game ORDER BY record ASC LIMIT 5;
                 """
         records = await self.bot.pool.fetch(query, user.id)
 
@@ -284,7 +285,7 @@ class Leaderboard:
 
         query = """
                 SELECT game, games FROM leaderboard 
-                WHERE userid = $1 GROUP BY game ORDER BY games DESC LIMIT 5
+                WHERE user_id = $1 GROUP BY game ORDER BY games DESC LIMIT 5;
                 """
         games = await self.bot.pool.fetch(query, user.id)
 
@@ -300,7 +301,7 @@ class Leaderboard:
 
         query = """
                 SELECT game, attempts FROM leaderboard 
-                WHERE userid = $1 GROUP BY game ORDER BY attempts DESC LIMIT 5
+                WHERE user_id = $1 GROUP BY game ORDER BY attempts DESC LIMIT 5;
                 """
         attempts = await self.bot.pool.fetch(query, user.id)
 
@@ -317,7 +318,7 @@ class Leaderboard:
 
         query = """
                 SELECT game, correct FROM leaderboard 
-                WHERE userid = $1 GROUP BY game ORDER BY correct DESC LIMIT 5
+                WHERE user_id = $1 GROUP BY game ORDER BY correct DESC LIMIT 5;
                 """
         correct = await self.bot.pool.fetch(query, user.id)
 
@@ -333,7 +334,7 @@ class Leaderboard:
 
         query = """
                 SELECT game, wrong FROM leaderboard 
-                WHERE userid = $1 GROUP BY game ORDER BY wrong DESC LIMIT 5
+                WHERE user_id = $1 GROUP BY game ORDER BY wrong DESC LIMIT 5;
                 """
         wrong = await self.bot.pool.fetch(query, user.id)
 
@@ -368,8 +369,8 @@ class Leaderboard:
 
         query = """
                 SELECT record, games, attempts, wrong, correct 
-                FROM leaderboard WHERE userid = $1 AND game = $2 
-                AND guildid = $3
+                FROM leaderboard WHERE user_id = $1 AND game = $2 
+                AND guild_id = $3;
                 """
         dump = await self.bot.pool.fetch(query, id, game, guildid)
 
@@ -380,9 +381,9 @@ class Leaderboard:
                     if prev[0] > record:
                         query = """
                                 UPDATE leaderboard SET record = $1 
-                                WHERE userid = $2 AND game = $3 AND guildid = $4
+                                WHERE user_id = $2 AND game = $3 AND guild_id = $4;
                                 """
-                        await self.bot.pool.execute(query, record. id, game, guildid)
+                        await self.bot.pool.execute(query, record, id, game, guildid)
 
                         # await db.execute("UPDATE leaderboard SET record = :record "
                         #                  "WHERE userid = :id AND game = :game AND guildid = :guildid",
@@ -395,18 +396,26 @@ class Leaderboard:
             # update a player's game in leaderboard adding corrects/attempts/games etc
             if isinstance(attempts, int):
                 attempts = dump[0][2] + attempts
+            else:
+                attempts = 0
             if isinstance(wrong, int):
                 wrong = dump[0][3] + wrong
+            else:
+                wrong = 0
             if isinstance(correct, int):
                 correct = dump[0][4] + correct
+            else:
+                correct = 0
+            if not isinstance(record, int):
+                record = 0
 
             query = """
                     UPDATE leaderboard SET games = $1,
                     attempts = $2, wrong = $3, correct = $4 
-                    WHERE userid = $5 AND game = $6 AND guildid = $7
+                    WHERE user_id = $5 AND game = $6 AND guild_id = $7;
                     """
-            await self.bot.pool.execute(query, dump[0][1] + 1, guildid, attempts,
-                                        wrong, correct, game)
+            await self.bot.pool.execute(query, dump[0][1] + 1, attempts,
+                                        wrong, correct, id, game, guildid)
 
             # await db.execute("UPDATE leaderboard SET games = :games,"
             #                  " attempts = :att, wrong = :wrong, correct = :corr "
@@ -419,12 +428,20 @@ class Leaderboard:
             # return the return string (if applicable else returns empty string)
             return ret
         else:
+            if not isinstance(attempts, int):
+                attempts = 0
+            if not isinstance(wrong, int):
+                wrong = 0
+            if not isinstance(correct, int):
+                correct = 0
+            if not isinstance(record, int):
+                record = 0
             # if first time playing add userid with stuff to game to db
             query = """
-                    INSERT INTO leaderboard VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
+                    INSERT INTO leaderboard VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
                     """
-            await self.bot.pool.execute(query, id, record, attempts,
-                                        wrong, correct, 1, guildid)
+            await self.bot.pool.execute(query, id, guildid, game,
+                                        record, 1, attempts, wrong, correct)
             # await db.execute("INSERT INTO leaderboard VALUES "
             #                  "(:game, :id, :record, :attempts, :wrong, :correct, :games, :guildid)",
             #                  {'game': game, 'id': id, 'record': record,

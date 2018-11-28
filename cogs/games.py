@@ -570,7 +570,7 @@ class Games:
                 # insert into leaderboard stuff
 
                 lb = Leaderboard(self.bot)
-                leader = await lb.into_leaderboard(game='reacttest', record=dif,
+                leader = await lb.into_leaderboard(game='reacttest', record=round(dif, 4),
                                                    attempts=1, wrong="N/A",
                                                    correct="N/A", guildid=ctx.guild.id,
                                                    id=ctx.author.id)
@@ -638,10 +638,16 @@ class Games:
             if (user is None) or (user.author.id != ctx.author.id):
                 return False
 
-            if isinstance(user.content, int):
+            try:
+                int(user.content)
                 return True
+            except:
+                return False
 
-            return False
+            # if isinstance(user.content, int):
+            #     return True
+            #
+            # return False
 
         # start guessing game
         await ctx.send(f"I have chosen a number between 1 and {str(limit)}. You have 15 seconds to try a "
