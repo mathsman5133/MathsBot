@@ -1,12 +1,9 @@
-from cogs.utils.creds import discordtoken, webhookid, webhooktoken
-from cogs.utils import checks
 import discord
 from discord.ext import commands
 import logging
 import sys
 import datetime
 import traceback
-import sqlite3
 from collections import deque
 import contextlib
 import aiosqlite
@@ -14,14 +11,20 @@ import os
 import json
 import functools
 
+import creds
+import click
+import importlib
+import asyncio
+from cogs.utils.db import Table
+import config
+
+
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 json_location = os.path.join(os.getcwd(), 'cogs', 'utils', 'mathsbot.json')
-conn = sqlite3.connect(db_path)
-# conn is for routine db entries/fetch (ie get prefix)
-c = conn.cursor()
-webhook = discord.Webhook.partial(id=webhookid, token=webhooktoken, adapter=discord.RequestsWebhookAdapter())
+
+webhook = discord.Webhook.partial(id=creds.webhookid, token=creds.webhooktoken, adapter=discord.RequestsWebhookAdapter())
+
 # webhook for logging command errors
-TOKEN = discordtoken
 initial_extensions = ['cogs.jokes',
                       'cogs.games',
                       'cogs.stats',
@@ -30,7 +33,8 @@ initial_extensions = ['cogs.jokes',
                       'cogs.mod',
                       'cogs.admin',
                       'cogs.roles',
-                      'cogs.announcements'
+                      'cogs.announcements',
+                      'cogs.leaderboard'
                       ]
 
 # cogs to load
@@ -41,7 +45,7 @@ def setup_logging():
     try:
         # __enter__
         # haven't set this up yet. might've maybe copied a bit of it
-        logging.getLogger('discord').setLevel(logging.INFO)
+        logging.getLogger('discord').setLevel(logging.DEBUG)
         logging.getLogger('discord.http').setLevel(logging.INFO)
 
         log = logging.getLogger()
@@ -62,33 +66,43 @@ def setup_logging():
 
 
 def run_bot():
+    loop = asyncio.get_event_loop()
     log = logging.getLogger()
+
+    try:
+        pool = loop.run_until_complete(Table.create_pool(config.postgresql, command_timeout=60))
+    except Exception as e:
+        click.echo('Could not set up PostgreSQL. Exiting.', file=sys.stderr)
+        log.exception('Could not set up PostgreSQL. Exiting.')
+        return
     bot = MathsBot()
+    bot.pool = pool
     bot.run()
     # run bot
 
 
 class MathsBot(commands.Bot):
     def __init__(self):
-        super().__init__(command_prefix=self.find_prefix, case_insensitive=True,
-                         fetch_offline_members=False)
+        super().__init__(command_prefix=self.find_prefix, case_insensitive=True)
         # setup bot
         self.remove_command(name='help')
         # we have our own help formatter
         self._prev_events = deque(maxlen=10)
-        # idk what this does but it works
+        # # idk what this does but it works
         self.webhook = webhook
-        # assign error log webhook to bot, make it easy to call elsewhere
+        # # assign error log webhook to bot, make it easy to call elsewhere
+        self.extns = initial_extensions
 
         with open(json_location) as guildinfo:
             self.loaded = json.load(guildinfo)
 
-        for extension in initial_extensions:
+        for e in initial_extensions:
             # load cogs
+            print('ok')
             try:
-                self.load_extension(extension)
+                self.load_extension(e)
             except Exception as e:
-                print(f'Failed to load extension {extension}.', file=sys.stderr)
+                print(f'Failed to load extension {e}.', file=sys.stderr)
                 print(e)
 
     def get_guild_prefix(self, guildid):
@@ -198,22 +212,25 @@ class MathsBot(commands.Bot):
 
     async def on_socket_response(self, msg):
         # whenever we get a socket response (ie. typing start, any message, reaction, most basic events
-        self._prev_events.append(msg)
+        #self._prev_events.append(msg)
+        pass
 
     async def on_message(self, message):
         # on any message
         if message.author.bot:
             # ignore command if author is a bot
             return
+        # if message.author.id != 230214242618441728:
+        #     return
 
-        ignored = self.get_ignored(message.guild.id, cid='all')
-        ignored.extend(self.get_global_ignored('all'))
-        if message.guild.id in ignored:
-            return
-        if message.channel.id in ignored:
-            return
-        if message.author.id in ignored:
-            return
+        # ignored = self.get_ignored(message.guild.id, cid='all')
+        # ignored.extend(self.get_global_ignored('all'))
+        # if message.guild.id in ignored:
+        #     return
+        # if message.channel.id in ignored:
+        #     return
+        # if message.author.id in ignored:
+        #     return
         # send rest of messages through (to look for prefix, command etc.)
         await self.process_commands(message)
 
@@ -221,6 +238,8 @@ class MathsBot(commands.Bot):
         await ctx.message.channel.trigger_typing()
 
     async def on_command_error(self, ctx, error):
+        print('ok')
+        print(''.join(traceback.format_exception(type(error), error, error.__traceback__, chain=False)))
         # we dont want logs for this stuff which isnt our problem
         ignored = (commands.NoPrivateMessage, commands.DisabledCommand, commands.CheckFailure,
                    commands.CommandNotFound, commands.UserInputError, discord.Forbidden)
@@ -338,8 +357,9 @@ class MathsBot(commands.Bot):
 
     def run(self):
         # run it or tell me why it won't work
+        print('ok')
         try:
-            super().run(TOKEN)
+            super().run(creds.discordtoken)
         except Exception as e:
             print(e)
 
@@ -348,7 +368,71 @@ class MathsBot(commands.Bot):
         return __import__('config')
 
 
+@click.group(invoke_without_command=True, options_metavar='[options]')
+@click.pass_context
+def main(ctx):
+    """Launches the bot."""
+    if ctx.invoked_subcommand is None:
+        loop = asyncio.get_event_loop()
+        with setup_logging():
+            run_bot()
+
+
+@main.group(short_help='database stuff', options_metavar='[options]')
+def db():
+    pass
+
+
+@db.command(short_help='initialises the databases for the bot', options_metavar='[options]')
+@click.argument('cogs', nargs=-1, metavar='[cogs]')
+@click.option('-q', '--quiet', help='less verbose output', is_flag=True)
+def init(cogs, quiet):
+    """This manages the migrations and database creation system for you."""
+
+    run = asyncio.get_event_loop().run_until_complete
+    try:
+        run(Table.create_pool(config.postgresql))
+    except Exception:
+        click.echo(f'Could not create PostgreSQL connection pool.\n{traceback.format_exc()}', err=True)
+        return
+
+    if not cogs:
+        cogs = initial_extensions
+    else:
+        cogs = [f'cogs.{e}' if not e.startswith('cogs.') else e for e in cogs]
+
+    for ext in cogs:
+        try:
+            importlib.import_module(ext)
+        except Exception:
+            click.echo(f'Could not load {ext}.\n{traceback.format_exc()}', err=True)
+            return
+
+    for table in Table.all_tables():
+        try:
+            created = run(table.create(verbose=not quiet, run_migrations=False))
+        except Exception:
+            click.echo(f'Could not create {table.__tablename__}.\n{traceback.format_exc()}', err=True)
+        else:
+            if created:
+                click.echo(f'[{table.__module__}] Created {table.__tablename__}.')
+            else:
+                click.echo(f'[{table.__module__}] No work needed for {table.__tablename__}.')
+
+
 if __name__ == '__main__':
     with setup_logging():
         # run bot with logging which I'm yet to set up
-        run_bot()
+        main()
+
+# bot = commands.Bot(command_prefix='?')
+# bot.remove_command('help')
+# for e in initial_extensions:
+#     # load cogs
+#     print('ok')
+#     try:
+#         bot.load_extension(e)
+#     except Exception as e:
+#         print(f'Failed to load extension {e}.', file=sys.stderr)
+#         print(e)
+# bot.run(config.token)
