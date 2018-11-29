@@ -6,7 +6,27 @@ import os
 import asyncio
 import webcolors
 from cogs.actionlog import ChannelConverter
+from cogs.utils import db
+
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
+
+
+class Notify(db.Table):
+    id = db.Column(db.Integer(big=True), primary_key=True)
+
+    message_id = db.Column(db.Integer(big=True))
+    bot_message_id = db.Column(db.Integer(big=True), index=True)
+    author_id = db.Column(db.Integer(big=True))
+    message_content = db.Column(db.String)
+    role_idx = db.Column(db.Integer(big=True))
+
+
+class AnnounceChannels(db.Table, table_name='announce_channels'):
+    id = db.Column(db.Integer(big=True))
+
+    guild_id = db.Column(db.Integer(big=True))
+    channel_id = db.Column(db.Integer(big=True))
+
 
 class Announcements:
     def __init__(self, bot):

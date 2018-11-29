@@ -3,9 +3,35 @@ from discord.ext import commands
 import asyncio
 import os
 from cogs.utils.help import HelpPaginator
-from cogs.utils import checks
+from cogs.utils import checks, db
+
 
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
+
+
+class Ignores(db.Table):
+    id = db.PrimaryKeyColumn()
+
+    guild_id = db.Column(db.Integer(big=True))
+    channel_id = db.Column(db.Integer(big=True))
+    role_id = db.Column(db.Integer(big=True))
+    user_id = db.Column(db.Integer(big=True))
+    command_name = db.Column(db.String)
+
+    ignored_guild = db.Column(db.Boolean())
+    ignored_channel = db.Column(db.Boolean())
+    ignored_role = db.Column(db.Boolean())
+    local_ignored_command = db.Column(db.Boolean())
+    global_ignored_command = db.Column(db.Boolean())
+    local_ignored_user = db.Column(db.Boolean())
+    global_ignored_user = db.Column(db.Boolean())
+
+
+class Prefix(db.Table):
+    id = db.PrimaryKeyColumn()
+
+    guild_id = db.Column(db.Integer(big=True))
+    prefix = db.Column(db.String())
 
 
 class MemberId(commands.Converter):
@@ -81,7 +107,6 @@ class Mod:
             await ctx.send(error)
 
     @commands.group(name="prefix", invoke_without_command=True)
-    @checks.is_mod()
     async def prefix(self, ctx):
         """Manages a servers prefixes.
 
@@ -444,6 +469,7 @@ class Mod:
             await p.paginate()
         except Exception as e:
             await ctx.send(e)
+
 
 def setup(bot):
     bot.add_cog(Mod(bot))
