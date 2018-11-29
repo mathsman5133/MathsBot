@@ -2,10 +2,18 @@ import discord
 from discord.ext import commands
 import datetime
 from collections import Counter
-import aiosqlite
-import os
+from cogs.utils import db
 
-db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
+
+class Commands(db.Table):
+    id = db.PrimaryKeyColumn()
+
+    guild_id = db.Integer(big=True)
+    channel_id = db.Integer(big=True)
+    user_id = db.Integer(big=True)
+    timestamp = db.Datetime()
+    prefix = db.String()
+    command = db.String()
 
 
 class Stats:
@@ -27,18 +35,26 @@ class Stats:
         else:
             destination = f'#{message.channel} ({message.guild})'
             guild_id = ctx.guild.id
-        # insert command (and info) into db
-        async with aiosqlite.connect(db_path) as db:
-            await db.execute("INSERT INTO commands VALUES "
-                             "(:guild_id, :channel_id, :author_id, :used, :prefix, :command)",
-                             {'guild_id': guild_id,
-                              'channel_id': ctx.channel.id,
-                              'author_id': ctx.author.id,
-                              'used': datetime.datetime.utcnow(),
-                              'prefix': ctx.prefix,
-                              'command': command})
-            # save
-            await db.commit()
+
+        query = """
+                INSERT INTO commands VALUES ($1, $2, $3, $4, $5, $6);
+                """
+
+        await self.bot.pool.execute(query, guild_id, ctx.channel.id,
+                                    ctx.author.id, datetime.datetime.utcnow(),
+                                    ctx.prefix, command)
+
+        # async with aiosqlite.connect(db_path) as db:
+        #     await db.execute("INSERT INTO commands VALUES "
+        #                      "(:guild_id, :channel_id, :author_id, :used, :prefix, :command)",
+        #                      {'guild_id': guild_id,
+        #                       'channel_id': ctx.channel.id,
+        #                       'author_id': ctx.author.id,
+        #                       'used': datetime.datetime.utcnow(),
+        #                       'prefix': ctx.prefix,
+        #                       'command': command})
+        #     # save
+        #     await db.commit()
 
     async def on_socket_response(self, msg):
         # add socket reponse to counter (scroll to bottom)
@@ -47,9 +63,7 @@ class Stats:
     @commands.command(hidden=True)
     @commands.is_owner()
     async def commandstats(self, ctx, limit=20):
-        # gets stats of what commands run
         counter = self.bot.command_stats
-        # make codeblock msg formatting look kinda ok
         width = len(max(counter, key=len))
 
         if limit > 0:
@@ -107,16 +121,19 @@ class Stats:
         hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
         days, hours = divmod(hours, 24)
-        async with aiosqlite.connect(db_path) as db:
-            c = await db.execute("SELECT command FROM commands")
-            dump = await c.fetchall()
+
+        query = """SELECT command FROM commands
+                """
+        dump = await self.bot.pool.fetch(query)
+
+        # async with aiosqlite.connect(db_path) as db:
+        #     c = await db.execute("SELECT command FROM commands")
+        #     dump = await c.fetchall()
+
         appinfo = await self.bot.application_info()
         dpn = appinfo.owner.display_name
         dscrm = appinfo.owner.discriminator
-        channels = 0
-        for guild in self.bot.guilds:
-            for channel in guild.channels:
-                channels += 1
+        channels = [len(n.channels) for n in self.bot.guilds]
 
         e = discord.Embed(colour=discord.Colour.orange())
         e.set_author(name=f"{dpn}"
