@@ -8,12 +8,12 @@ from cogs.utils import db
 class Commands(db.Table):
     id = db.PrimaryKeyColumn()
 
-    guild_id = db.Integer(big=True)
-    channel_id = db.Integer(big=True)
-    user_id = db.Integer(big=True)
-    timestamp = db.Datetime()
-    prefix = db.String()
-    command = db.String()
+    guild_id = db.Column(db.Integer(big=True))
+    channel_id = db.Column(db.Integer(big=True))
+    user_id = db.Column(db.Integer(big=True))
+    timestamp = db.Column(db.Datetime())
+    prefix = db.Column(db.String())
+    command = db.Column(db.String())
 
 
 class Stats:
@@ -37,7 +37,8 @@ class Stats:
             guild_id = ctx.guild.id
 
         query = """
-                INSERT INTO commands VALUES ($1, $2, $3, $4, $5, $6);
+                INSERT INTO commands (guild_id, channel_id, author_id, used, prefix, command)
+                VALUES ($1, $2, $3, $4, $5, $6);
                 """
 
         await self.bot.pool.execute(query, guild_id, ctx.channel.id,
