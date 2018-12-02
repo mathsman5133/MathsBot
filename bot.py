@@ -419,6 +419,43 @@ def init(cogs, quiet):
             else:
                 click.echo(f'[{table.__module__}] No work needed for {table.__tablename__}.')
 
+@db.command(short_help='migrates the databases')
+@click.argument('cog', nargs=1, metavar='[cog]')
+@click.option('-q', '--quiet', help='less verbose output', is_flag=True)
+@click.pass_context
+def migrate(ctx, cog, quiet):
+    """Update the migration file with the newest schema."""
+
+    if not cog.startswith('cogs.'):
+        cog = f'cogs.{cog}'
+
+    try:
+        importlib.import_module(cog)
+    except Exception:
+        click.echo(f'Could not load {ext}.\n{traceback.format_exc()}', err=True)
+        return
+
+    def work(table, *, invoked=False):
+        try:
+            actually_migrated = table.write_migration()
+        except RuntimeError as e:
+            click.echo(f'Could not migrate {table.__tablename__}: {e}', err=True)
+            if not invoked:
+                click.confirm('do you want to create the table?', abort=True)
+                ctx.invoke(init, cogs=[cog], quiet=quiet)
+                work(table, invoked=True)
+            sys.exit(-1)
+        else:
+            if actually_migrated:
+                click.echo(f'Successfully updated migrations for {table.__tablename__}.')
+            else:
+                click.echo(f'Found no changes for {table.__tablename__}.')
+
+    for table in Table.all_tables():
+        work(table)
+
+    click.echo(f'Done migrating {cog}.')
+
 
 if __name__ == '__main__':
     with setup_logging():
