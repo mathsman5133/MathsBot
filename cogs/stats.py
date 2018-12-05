@@ -10,7 +10,7 @@ class Commands(db.Table):
 
     guild_id = db.Column(db.Integer(big=True))
     channel_id = db.Column(db.Integer(big=True))
-    user_id = db.Column(db.Integer(big=True))
+    author_id = db.Column(db.Integer(big=True))
     timestamp = db.Column(db.Datetime())
     prefix = db.Column(db.String())
     command = db.Column(db.String())
