@@ -86,6 +86,7 @@ class Games:
             e.set_author(name=f"{user['user'].display_name}#{user['user'].discriminator}'s turn",
                          icon_url=user['user'].avatar_url)
             e.set_thumbnail(url=trivia['icon_url'])
+            e.title = trivia['question']
             e.description = trivia['answers']
             e.set_footer(text="Multiple Choice! Type the letter of the answer you think it is.")
             send = await ctx.send(embed=e)
