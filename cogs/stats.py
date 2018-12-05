@@ -37,7 +37,7 @@ class Stats:
             guild_id = ctx.guild.id
 
         query = """
-                INSERT INTO commands (guild_id, channel_id, author_id, used, prefix, command)
+                INSERT INTO commands (guild_id, channel_id, author_id, timestamp, prefix, command)
                 VALUES ($1, $2, $3, $4, $5, $6);
                 """
 
