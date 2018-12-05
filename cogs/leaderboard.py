@@ -13,13 +13,12 @@ class LeaderboardDB(db.Table, table_name='leaderboard'):
 
     user_id = db.Column(db.Integer(big=True))
     guild_id = db.Column(db.Integer(big=True))
-    game = db.Column(db.String)
-    attempts = db.Column(db.String)
-    wrong = db.Column(db.String)
-    correct = db.Column(db.String)
-    games = db.Column(db.String)
-    record = db.Column(db.Numeric)
-
+    game = db.Column(db.String())
+    attempts = db.Column(db.Integer())
+    wrong = db.Column(db.Integer())
+    correct = db.Column(db.Integer())
+    games = db.Column(db.Integer())
+    record = db.Column(db.Numeric())
 
 
 class Leaderboard:
