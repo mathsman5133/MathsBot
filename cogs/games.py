@@ -188,7 +188,7 @@ class Games:
                 query = """SELECT category FROM trivia
                         """
                 dump = list(set(await self.bot.pool.fetch(query)))
-                desc = '{}\n'.join(n[0] for n in dump)
+                desc = '\n'.join(n[0] for n in dump)
 
                 e = discord.Embed(colour=0x00ff00)
                 e.set_author(name="Categories for trivia games", icon_url=ctx.author.avatar_url)
