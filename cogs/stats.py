@@ -170,6 +170,7 @@ class Stats:
 
         await ctx.send(embed=e)
 
+
 def setup(bot):
     if not hasattr(bot, 'command_stats'):
         # start counter for commands used (and type) for current session, add as bot attribute

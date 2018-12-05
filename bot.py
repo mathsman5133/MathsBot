@@ -16,6 +16,7 @@ import click
 import importlib
 import asyncio
 from cogs.utils.db import Table
+from cogs.utils import context
 import config
 
 
@@ -233,6 +234,15 @@ class MathsBot(commands.Bot):
         #     return
         # send rest of messages through (to look for prefix, command etc.)
         await self.process_commands(message)
+
+    async def process_commands(self, message):
+        ctx = await self.get_context(message, cls=context.Context)
+
+        if ctx.command is None:
+            return
+
+        async with ctx.acquire():
+            await self.invoke(ctx)
 
     async def on_command(self, ctx):
         await ctx.message.channel.trigger_typing()

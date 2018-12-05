@@ -467,6 +467,7 @@ class MaybeAcquire:
         if self._cleanup:
             await self.pool.release(self._connection)
 
+
 class TableMeta(type):
     @classmethod
     def __prepare__(cls, name, bases, **kwargs):

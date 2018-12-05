@@ -21,8 +21,7 @@ class AllJokes(db.Table, table_name='jokes'):
 class DadJokes(db.Table):
     id = db.PrimaryKeyColumn()
 
-    joke = db.Column(db.String)
-    unique = db.Column(db.String)
+    joke = db.Column(db.String())
 
 
 class SavedJokes(db.Table):

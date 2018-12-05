@@ -9,7 +9,7 @@ import textwrap
 import traceback
 import datetime
 from cogs.utils import db
-
+import bot
 db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 

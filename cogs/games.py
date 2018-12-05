@@ -85,8 +85,8 @@ class Games:
             e = discord.Embed(colour=discord.Colour.blue())
             e.set_author(name=f"{user['user'].display_name}#{user['user'].discriminator}'s turn",
                          icon_url=user['user'].avatar_url)
-            e.set_thumbnail(url=trivia[8])
-            e.description = trivia[3]
+            e.set_thumbnail(url=trivia['icon_url'])
+            e.description = trivia['answers']
             e.set_footer(text="Multiple Choice! Type the letter of the answer you think it is.")
             send = await ctx.send(embed=e)
             while True:
@@ -97,7 +97,7 @@ class Games:
                     e = discord.Embed()
                     e.add_field(name="Explanation", value=trivia[5])
 
-                    if msg.content.lower() == trivia[4].lower():
+                    if msg.content.lower() == trivia['correct'].lower():
                         info[user['user'].id]['correct'] += 1
 
                         e.colour = discord.Colour.green()
@@ -117,6 +117,8 @@ class Games:
                     embed.set_author(name="You took too long. Your turn has been skipped!",
                                      icon_url=user['user'].avatar_url)
                     await send.edit(embed=embed)
+                    if len(info) == 1:
+                        return
                     break
 
         e = discord.Embed(colour=discord.Colour.green())
@@ -595,7 +597,7 @@ class Games:
                 break
 
     @commands.command(name='guess')
-    async def guess_number(self, ctx, limit=None):
+    async def guess_number(self, ctx, limit:int=None):
         """
         I choose a number and you have to guess! Default limit is 1000. I will tell you if you are too small or too big.
 
@@ -607,8 +609,10 @@ class Games:
 
         if not limit:
             limit = 1000
-        if not isinstance(limit, int):
-            return await ctx.send("Please enter an integer parameter, or none at all (will default to 1000)")
+        # try:
+        #     int(limit)
+        # except:
+        #     return await ctx.send("Please enter an integer parameter, or none at all (will default to 1000)")
 
         async def check_send():
             # if its first round dont give them a difference

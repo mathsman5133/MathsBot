@@ -59,7 +59,9 @@ def check_roles(ctx, modperms=False, adminperms=False):
 def is_mod():
     async def predict(ctx):
         owner = await ctx.bot.is_owner(ctx.author)
+        print('yes')
         if owner:
+            print('yes')
             return True
 
         check_roles(ctx, modperms=True)
