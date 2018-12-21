@@ -1,13 +1,9 @@
 from discord.ext import commands
-import aiosqlite
 import random
 import discord
 import asyncio
 from cogs.games import Leaderboard
-import os
 from cogs.utils import db
-
-db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 
 class AllJokes(db.Table, table_name='jokes'):

@@ -3,7 +3,6 @@ from discord.ext import commands
 import asyncio
 from cogs.utils.help import HelpPaginator
 import webcolors
-import aiosqlite
 import enum
 import re
 import os
@@ -11,7 +10,6 @@ import datetime
 import io
 from .admin import TabularData
 
-db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 # action log in progress
 

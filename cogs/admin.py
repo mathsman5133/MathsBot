@@ -1,16 +1,12 @@
 import discord
 from discord.ext import commands
 import time
-import aiosqlite
-import os
 import io
 from contextlib import redirect_stdout
 import textwrap
 import traceback
 import datetime
 from cogs.utils import db
-import bot
-db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 
 class Commands(db.Table):

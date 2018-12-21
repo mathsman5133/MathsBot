@@ -1,12 +1,8 @@
 import discord
 from discord.ext import commands
 import asyncio
-import os
 from cogs.utils.help import HelpPaginator
 from cogs.utils import checks, db
-
-
-db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 
 class Ignores(db.Table):

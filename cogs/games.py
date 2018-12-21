@@ -598,7 +598,7 @@ class Games:
                 break
 
     @commands.command(name='guess')
-    async def guess_number(self, ctx, limit:int=None):
+    async def guess_number(self, ctx, limit: int=None):
         """
         I choose a number and you have to guess! Default limit is 1000. I will tell you if you are too small or too big.
 
@@ -629,12 +629,12 @@ class Games:
             if int(msg.content) >= number:
                 e.colour = 0xffa500
                 e.set_author(name="Too large!", icon_url=ctx.author.avatar_url)
-                e.set_footer(text=f"Average difference: {dif}")
 
             else:
                 e.colour = 0x0000ff
                 e.set_author(name="Too small!", icon_url=ctx.author.avatar_url)
-                e.set_footer(text=f"Average difference: {dif}")
+
+            e.set_footer(text=f"Average difference: {dif}")
 
             await ctx.send(embed=e)
 
@@ -649,11 +649,6 @@ class Games:
             except:
                 return False
 
-            # if isinstance(user.content, int):
-            #     return True
-            #
-            # return False
-
         # start guessing game
         await ctx.send(f"I have chosen a number between 1 and {str(limit)}. You have 15 seconds to try a "
                        "number before I time out. I will tell you if you are too big or too small")
@@ -667,39 +662,40 @@ class Games:
                 msg = await self.bot.wait_for('message', check=check, timeout=15.0)
                 # if it isnt the number, go thru checks
                 if int(msg.content) != number:
-                    await check_send()
+
+                    diflist.append(abs(number - int(msg.content)))
                     counter += 1
-                    # difference is absolute value (no negative dif)
-                    dif = abs(number - int(msg.content))
-                    # add to difference list
-                    diflist.append(dif)
+
+                    await check_send()
+
                 else:
-                    # got it correct and tell them
+
                     dif = int(sum(diflist) / len(diflist))
+
                     e = discord.Embed(colour=0x00ff00)
                     e.set_author(name="You got it!", icon_url=ctx.author.avatar_url)
                     e.add_field(name=f'Attempts: {counter}', value='\u200B')
                     e.add_field(name=f'Average Difference: {dif}', value='\u200B')
-                    e.set_footer(text=f"`{ctx.prefix}leaderboard` to show leaders for "
+                    e.set_footer(text=f"`{ctx.prefix}leaderboard guess` to show leaders for "
                                       "1k challenge")
 
                     # if it is 1k challenge then insert into leaderboard
                     if limit == 1000:
-                        lb = Leaderboard(ctx)
+                        lb = Leaderboard(self.bot)
                         leaderboard = await lb.into_leaderboard(game='guess', record=counter,
-                                                               attempts=counter, wrong='N/A',
-                                                               correct='N/A', guildid=ctx.guild.id,
-                                                               id=ctx.author.id)
+                                                                attempts=counter, wrong='N/A',
+                                                                correct='N/A', guildid=ctx.guild.id,
+                                                                id=ctx.author.id)
 
                         if leaderboard:
                             e.description = leaderboard
 
                     await ctx.send(embed=e)
                     break
-            # timeout error
+
             except asyncio.TimeoutError:
                 await ctx.send(f'You took too long! The number was {number}')
-                # insert all their fails into db
+
                 if limit == 1000:
                     lb = Leaderboard(self.bot)
                     await lb.into_leaderboard(game='guess', record=500,

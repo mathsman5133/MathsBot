@@ -1,11 +1,6 @@
 import discord
-import aiosqlite
-import os
 from discord.ext import commands
 from cogs.utils import db
-
-
-db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 
 class LeaderboardDB(db.Table, table_name='leaderboard'):

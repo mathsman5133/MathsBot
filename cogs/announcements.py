@@ -1,14 +1,11 @@
 import discord
 from discord.ext import commands
-import aiosqlite
 from cogs.utils import checks
-import os
 import asyncio
 import webcolors
 from cogs.actionlog import ChannelConverter
 from cogs.utils import db
 
-db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 
 class Notify(db.Table):

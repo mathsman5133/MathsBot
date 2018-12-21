@@ -29,11 +29,11 @@ initial_extensions = ['cogs.jokes',
                       'cogs.games',
                       'cogs.stats',
                       'cogs.hangman',
-                      'cogs.actionlog',
+                      # 'cogs.actionlog',
                       'cogs.mod',
                       'cogs.admin',
                       'cogs.roles',
-                      'cogs.announcements',
+                      # 'cogs.announcements',
                       'cogs.leaderboard'
                       ]
 

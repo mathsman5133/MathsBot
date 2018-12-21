@@ -3,9 +3,6 @@ import discord
 import re
 import random
 from cogs.games import Leaderboard
-import os
-
-db_path = os.path.join(os.getcwd(), 'cogs', 'utils', 'database.db')
 
 # phrases i copied from somewhere. need to find more/new/dif ones too
 phrases = [

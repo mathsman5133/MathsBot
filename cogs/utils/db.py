@@ -43,8 +43,10 @@ import asyncio
 
 log = logging.getLogger(__name__)
 
+
 class SchemaError(Exception):
     pass
+
 
 class SQLType:
     python = None
@@ -80,11 +82,13 @@ class SQLType:
     def is_real_type(self):
         return True
 
+
 class Binary(SQLType):
     python = bytes
 
     def to_sql(self):
         return 'BYTEA'
+
 
 class Boolean(SQLType):
     python = bool
@@ -92,11 +96,13 @@ class Boolean(SQLType):
     def to_sql(self):
         return 'BOOLEAN'
 
+
 class Date(SQLType):
     python = datetime.date
 
     def to_sql(self):
         return 'DATE'
+
 
 class Datetime(SQLType):
     python = datetime.datetime
@@ -109,17 +115,20 @@ class Datetime(SQLType):
             return 'TIMESTAMP WITH TIMEZONE'
         return 'TIMESTAMP'
 
+
 class Double(SQLType):
     python = float
 
     def to_sql(self):
         return 'REAL'
 
+
 class Float(SQLType):
     python = float
 
     def to_sql(self):
         return 'FLOAT'
+
 
 class Integer(SQLType):
     python = int
@@ -148,6 +157,7 @@ class Integer(SQLType):
     def is_real_type(self):
         return not self.auto_increment
 
+
 class Interval(SQLType):
     python = datetime.timedelta
 
@@ -167,6 +177,7 @@ class Interval(SQLType):
             return 'INTERVAL ' + self.field
         return 'INTERVAL'
 
+
 class Numeric(SQLType):
     python = decimal.Decimal
 
@@ -185,6 +196,7 @@ class Numeric(SQLType):
             return 'NUMERIC({0.precision}, {0.scale})'.format(self)
         return 'NUMERIC'
 
+
 class String(SQLType):
     python = str
 
@@ -202,6 +214,7 @@ class String(SQLType):
             return 'CHAR({0.length})'.format(self)
         return 'VARCHAR({0.length})'.format(self)
 
+
 class Time(SQLType):
     python = datetime.time
 
@@ -213,11 +226,13 @@ class Time(SQLType):
             return 'TIME WITH TIME ZONE'
         return 'TIME'
 
+
 class JSON(SQLType):
     python = None
 
     def to_sql(self):
         return 'JSONB'
+
 
 class ForeignKey(SQLType):
     def __init__(self, table, column, *, sql_type=None, on_delete='CASCADE', on_update='NO ACTION'):
@@ -240,7 +255,6 @@ class ForeignKey(SQLType):
 
         if on_update not in valid_actions:
             raise TypeError('on_update must be one of %s.' % valid_actions)
-
 
         self.table = table
         self.column = column
@@ -269,6 +283,7 @@ class ForeignKey(SQLType):
               ' ON DELETE {0.on_delete} ON UPDATE {0.on_update}'
         return fmt.format(self)
 
+
 class Array(SQLType):
     python = list
 
@@ -293,9 +308,11 @@ class Array(SQLType):
         # so we're going to pretend that it isn't
         return False
 
+
 class Column:
-    __slots__ = ( 'column_type', 'index', 'primary_key', 'nullable',
-                  'default', 'unique', 'name', 'index_name' )
+    __slots__ = ('column_type', 'index', 'primary_key', 'nullable',
+                 'default', 'unique', 'name', 'index_name' )
+
     def __init__(self, column_type, *, index=False, primary_key=False,
                  nullable=True, unique=False, default=None, name=None):
 
@@ -312,7 +329,7 @@ class Column:
         self.nullable = nullable
         self.default = default
         self.name = name
-        self.index_name = None # to be filled later
+        self.index_name = None  # to be filled later
 
         if sum(map(bool, (unique, primary_key, default is not None))) > 1:
             raise SchemaError("'unique', 'primary_key', and 'default' are mutually exclusive.")
@@ -339,7 +356,7 @@ class Column:
         return d
 
     def _qualifiers_dict(self):
-        return { attr: getattr(self, attr) for attr in ('nullable', 'default')}
+        return {attr: getattr(self, attr) for attr in ('nullable', 'default')}
 
     def _is_rename(self, other):
         if self.name == other.name:
@@ -371,11 +388,13 @@ class Column:
 
         return ' '.join(builder)
 
+
 class PrimaryKeyColumn(Column):
     """Shortcut for a SERIAL PRIMARY KEY column."""
 
     def __init__(self):
         super().__init__(Integer(auto_increment=True), primary_key=True)
+
 
 class SchemaDiff:
     __slots__ = ('table', 'upgrade', 'downgrade')
@@ -386,7 +405,7 @@ class SchemaDiff:
         self.downgrade = downgrade
 
     def to_dict(self):
-        return { 'upgrade': self.upgrade, 'downgrade': self.downgrade }
+        return {'upgrade': self.upgrade, 'downgrade': self.downgrade }
 
     def is_empty(self):
         return len(self.upgrade) == 0 and len(self.downgrade) == 0
@@ -995,12 +1014,14 @@ class Table(metaclass=TableMeta):
 
         return SchemaDiff(self, upgrade, downgrade)
 
+
 async def _table_creator(tables, *, verbose=True):
     for table in tables:
         try:
             await table.create(verbose=verbose)
         except:
             log.error('Failed to create table %s.', table.__tablename__)
+
 
 def create_tables(*tables, verbose=True, loop=None):
     if loop is None:
