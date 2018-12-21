@@ -6,7 +6,6 @@ import datetime
 import traceback
 from collections import deque
 import contextlib
-import aiosqlite
 import os
 import json
 import functools
@@ -428,6 +427,7 @@ def init(cogs, quiet):
                 click.echo(f'[{table.__module__}] Created {table.__tablename__}.')
             else:
                 click.echo(f'[{table.__module__}] No work needed for {table.__tablename__}.')
+
 
 @db.command(short_help='migrates the databases')
 @click.argument('cog', nargs=1, metavar='[cog]')
