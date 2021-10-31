@@ -29,40 +29,13 @@ initial_extensions = ['cogs.jokes',
                       'cogs.games',
                       'cogs.stats',
                       'cogs.hangman',
-                      # 'cogs.actionlog',
                       'cogs.mod',
                       'cogs.admin',
                       'cogs.roles',
-                      # 'cogs.announcements',
                       'cogs.leaderboard'
                       ]
 
 # cogs to load
-
-
-@contextlib.contextmanager
-def setup_logging():
-    try:
-        # __enter__
-        # haven't set this up yet. might've maybe copied a bit of it
-        logging.getLogger('discord').setLevel(logging.DEBUG)
-        logging.getLogger('discord.http').setLevel(logging.INFO)
-
-        log = logging.getLogger()
-        log.setLevel(logging.INFO)
-        handler = logging.FileHandler(filename='mathsbot.log', encoding='utf-8', mode='w')
-        dt_fmt = '%Y-%m-%d %H:%M:%S'
-        fmt = logging.Formatter('[{asctime}] [{levelname:<7}] {name}: {message}', dt_fmt, style='{')
-        handler.setFormatter(fmt)
-        log.addHandler(handler)
-
-        yield
-    finally:
-        # __exit__
-        handlers = log.handlers[:]
-        for hdlr in handlers:
-            hdlr.close()
-            log.removeHandler(hdlr)
 
 
 def run_bot():
@@ -88,7 +61,6 @@ class MathsBot(commands.Bot):
         self.remove_command(name='help')
         # we have our own help formatter
         self._prev_events = deque(maxlen=10)
-        # # idk what this does but it works
         self.webhook = webhook
         # # assign error log webhook to bot, make it easy to call elsewhere
         self.extns = initial_extensions
@@ -98,7 +70,6 @@ class MathsBot(commands.Bot):
 
         for e in initial_extensions:
             # load cogs
-            print('ok')
             try:
                 self.load_extension(e)
             except Exception as e:
@@ -199,21 +170,6 @@ class MathsBot(commands.Bot):
         thing = functools.partial(self.save_to_json)
 
         await self.loop.run_in_executor(None, thing)
-
-    async def on_ready(self):
-        if not hasattr(self, 'uptime'):
-            # add attribute when script started to bot
-            self.uptime = datetime.datetime.utcnow()
-        # tell us bot is online
-        print(f'Ready: {self.user} (ID: {self.user.id})')
-        print(self.uptime)
-        for gui in self.guilds:
-            print(len(gui.members), gui.name)
-
-    async def on_socket_response(self, msg):
-        # whenever we get a socket response (ie. typing start, any message, reaction, most basic events
-        #self._prev_events.append(msg)
-        pass
 
     async def on_message(self, message):
         # on any message
@@ -377,109 +333,7 @@ class MathsBot(commands.Bot):
         return __import__('config')
 
 
-@click.group(invoke_without_command=True, options_metavar='[options]')
-@click.pass_context
-def main(ctx):
-    """Launches the bot."""
-    if ctx.invoked_subcommand is None:
-        loop = asyncio.get_event_loop()
-        with setup_logging():
-            run_bot()
-
-
-@main.group(short_help='database stuff', options_metavar='[options]')
-def db():
-    pass
-
-
-@db.command(short_help='initialises the databases for the bot', options_metavar='[options]')
-@click.argument('cogs', nargs=-1, metavar='[cogs]')
-@click.option('-q', '--quiet', help='less verbose output', is_flag=True)
-def init(cogs, quiet):
-    """This manages the migrations and database creation system for you."""
-
-    run = asyncio.get_event_loop().run_until_complete
-    try:
-        run(Table.create_pool(config.postgresql))
-    except Exception:
-        click.echo(f'Could not create PostgreSQL connection pool.\n{traceback.format_exc()}', err=True)
-        return
-
-    if not cogs:
-        cogs = initial_extensions
-    else:
-        cogs = [f'cogs.{e}' if not e.startswith('cogs.') else e for e in cogs]
-
-    for ext in cogs:
-        try:
-            importlib.import_module(ext)
-        except Exception:
-            click.echo(f'Could not load {ext}.\n{traceback.format_exc()}', err=True)
-            return
-
-    for table in Table.all_tables():
-        try:
-            created = run(table.create(verbose=not quiet, run_migrations=False))
-        except Exception:
-            click.echo(f'Could not create {table.__tablename__}.\n{traceback.format_exc()}', err=True)
-        else:
-            if created:
-                click.echo(f'[{table.__module__}] Created {table.__tablename__}.')
-            else:
-                click.echo(f'[{table.__module__}] No work needed for {table.__tablename__}.')
-
-
-@db.command(short_help='migrates the databases')
-@click.argument('cog', nargs=1, metavar='[cog]')
-@click.option('-q', '--quiet', help='less verbose output', is_flag=True)
-@click.pass_context
-def migrate(ctx, cog, quiet):
-    """Update the migration file with the newest schema."""
-
-    if not cog.startswith('cogs.'):
-        cog = f'cogs.{cog}'
-
-    try:
-        importlib.import_module(cog)
-    except Exception:
-        click.echo(f'Could not load {ext}.\n{traceback.format_exc()}', err=True)
-        return
-
-    def work(table, *, invoked=False):
-        try:
-            actually_migrated = table.write_migration()
-        except RuntimeError as e:
-            click.echo(f'Could not migrate {table.__tablename__}: {e}', err=True)
-            if not invoked:
-                click.confirm('do you want to create the table?', abort=True)
-                ctx.invoke(init, cogs=[cog], quiet=quiet)
-                work(table, invoked=True)
-            sys.exit(-1)
-        else:
-            if actually_migrated:
-                click.echo(f'Successfully updated migrations for {table.__tablename__}.')
-            else:
-                click.echo(f'Found no changes for {table.__tablename__}.')
-
-    for table in Table.all_tables():
-        work(table)
-
-    click.echo(f'Done migrating {cog}.')
-
 
 if __name__ == '__main__':
-    with setup_logging():
-        # run bot with logging which I'm yet to set up
-        main()
-
-# bot = commands.Bot(command_prefix='?')
-# bot.remove_command('help')
-# for e in initial_extensions:
-#     # load cogs
-#     print('ok')
-#     try:
-#         bot.load_extension(e)
-#     except Exception as e:
-#         print(f'Failed to load extension {e}.', file=sys.stderr)
-#         print(e)
-# bot.run(config.token)
+    bot = MathsBot()
+    bot.run(config.token)
